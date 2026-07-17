@@ -166,8 +166,9 @@ def test_flow_onboarding(browser):
 
     # 1.5 用 inject 模拟"选题确认后"的状态
     inject_state_workbench(page)
+    time.sleep(0.3)  # extra settle time
     check("1.9 Workbench visible after inject",
-          page.evaluate("document.getElementById('workbench').style.display === 'block'"))
+          page.evaluate("document.getElementById('workbench')?.style.display === 'block'"))
     check("1.10 Topic confirmed in state",
           page.evaluate("stateData?.topic?.confirmed === true"))
 

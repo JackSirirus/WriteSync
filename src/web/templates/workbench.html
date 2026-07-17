@@ -1921,6 +1921,36 @@ function connectSSE(projectId){
     renderAuxChecks(ch, checks);
   });
 
+  // ── v0.5.0 Suggestion Mode ──
+  sseClient.addEventListener('suggestion', e => {
+    const d = JSON.parse(e.data);
+    const options = d.options || [];
+    if (!options.length) return;
+    addChat('system', 'AI 建议下一步: <b>' + d.primary + '</b> — ' + (d.reasoning || ''));
+    // Render option cards
+    let h = '<div style="margin:8px 0">';
+    options.forEach(function (o, i) {
+      const isPrimary = o.action === d.primary;
+      h += '<div onclick="resumeV2Suggestion(\'' + o.action + '\')"'
+        + ' style="display:inline-block;margin:4px;padding:8px 14px;'
+        + (isPrimary ? 'background:var(--accent);color:var(--bg-deep);' : 'background:var(--bg-elevated);color:var(--text-primary);')
+        + 'border:1px solid ' + (isPrimary ? 'var(--accent)' : 'var(--border)') + ';border-radius:6px;cursor:pointer;font-size:12px;max-width:200px"'
+        + ' title="' + esc(o.reasoning || '') + ' (置信度: ' + Math.round((o.confidence||0)*100) + '%)">'
+        + '<div style="font-weight:600">' + esc(getAgentLabel ? getAgentLabel(o.action) : o.action) + '</div>'
+        + '<div style="font-size:10px;color:' + (isPrimary ? 'var(--bg-deep)' : 'var(--text-muted)') + '">' + esc((o.reasoning||'').slice(0, 40)) + '</div>'
+        + '</div>';
+    });
+    // Manual mode: user picks any agent
+    h += '<div onclick="showManualMode()"'
+      + ' style="display:inline-block;margin:4px;padding:8px 14px;background:var(--bg-surface);color:var(--text-secondary);border:1px dashed var(--border);border-radius:6px;cursor:pointer;font-size:12px">'
+      + '<div style="font-weight:600">手动选择</div>'
+      + '<div style="font-size:10px;color:var(--text-muted)">跳过建议，自己指定</div>'
+      + '</div></div>';
+    document.getElementById('chatMessages').insertAdjacentHTML('beforeend', h);
+    document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
+    updateChatInputState();
+  });
+
   sseClient.addEventListener('error', e => {
     let msg = '发生错误';
     try { if(e.data){ const d=JSON.parse(e.data); msg=d.message||msg; } } catch(_){}
@@ -2012,6 +2042,41 @@ async function resumeV2(action, feedback){
   hasInterrupt = false;
   updateChatInputState();
   setChatStatus('AI 思考中...');
+}
+
+// ── v0.5.0 Suggestion Mode helpers ──
+async function resumeV2Suggestion(selectedAction){
+  if(!v2ProjectId) return;
+  const f = new FormData();
+  f.append('approved', 'true');
+  f.append('selected_action', selectedAction);
+  f.append('scope', 'all');
+  await fetch('/api/v2/respond/' + v2ProjectId, {method:'POST', body:f});
+  hasInterrupt = false;
+  updateChatInputState();
+  setChatStatus('AI 思考中...');
+  addChat('system', '已选择: ' + selectedAction);
+}
+
+function showManualMode(){
+  const agents = [
+    {name:'story', label:'故事策划'},
+    {name:'character', label:'角色设定'},
+    {name:'world', label:'世界观'},
+    {name:'outline', label:'章纲规划'},
+    {name:'writer', label:'章节写作'},
+    {name:'proofreader', label:'校对润色'},
+    {name:'novel_review', label:'全书审查'},
+  ];
+  let h = '<div style="margin:8px 0"><div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">手动选择要调用的 Agent:</div>';
+  agents.forEach(function(a){
+    h += '<div onclick="resumeV2Suggestion(\'' + a.name + '\')"'
+      + ' style="display:inline-block;margin:4px;padding:8px 14px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px">'
+      + esc(a.label) + '<br><span style="font-size:10px;color:var(--text-muted)">' + esc(a.name) + '</span></div>';
+  });
+  h += '</div>';
+  document.getElementById('chatMessages').insertAdjacentHTML('beforeend', h);
+  document.getElementById('chatMessages').scrollTop = document.getElementById('chatMessages').scrollHeight;
 }
 
 // ======== 创作规则面板 ========

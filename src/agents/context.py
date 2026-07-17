@@ -154,6 +154,13 @@ def update_dynamic_context(state: dict, ch_num: int = 0, skip_llm: bool = False)
     except Exception:
         pass
 
+    try:
+        # ⑦ Continuity Envelope — 章节交接（Phase 3）
+        if ch_num > 0 and data.drafts and data.drafts.chapters:
+            ctx.continuity_envelope = _build_continuity_envelope(data, ch_num)
+    except Exception:
+        pass
+
     ctx.updated_chapter = ch_num
     ctx.updated_at = datetime.now().isoformat()
 
@@ -202,6 +209,21 @@ def build_writing_context(state: dict, chapter_num: int = 0) -> str:
         recent = ctx.recent_chapters_summary[:min(200, remaining)]
         parts.append(f"## 前章回顾\n{recent}")
         remaining -= len(recent) + 20
+
+    # Phase 3: Continuity Envelope — 上章交接状态 (≤150)
+    if remaining > 30 and ctx.continuity_envelope:
+        env = ctx.continuity_envelope
+        env_lines = []
+        if env.get("handoff"):
+            env_lines.append(f"[上章结束状态] {env['handoff']}")
+        if env.get("protected"):
+            env_lines.append(f"[保护元素·不可变更] {env['protected']}")
+        if env.get("plan_delta"):
+            env_lines.append(f"[本章计划调整] {env['plan_delta']}")
+        if env_lines:
+            env_text = "\n".join(env_lines)[:min(150, remaining)]
+            parts.append(f"## 章节交接\n{env_text}")
+            remaining -= len(env_text) + 20
 
     # 优先3: 伏笔 (≤100)
     if remaining > 30 and ctx.unresolved_foreshadows:
@@ -595,3 +617,69 @@ def _build_character_snapshot(chars: list, changes: list, ch_num: int) -> list[s
         else:
             lines.append(f"{ch.name}({ch.role})：{ch.personality}，{ch.goal}")
     return lines
+
+
+# ── Continuity Envelope (Phase 3) ──────────────────────────────────────────
+
+def _build_continuity_envelope(data, ch_num: int) -> dict:
+    """
+    Build the continuity envelope from chapter N to N+1.
+
+    Extracted from:
+    - Chapter N's final content (handoff state)
+    - Outline plan for chapter N+1 (plan_delta)
+    - Writer-level protected elements (regex-based fallback, no LLM)
+    """
+    envelope = {"handoff": "", "protected": "", "plan_delta": ""}
+
+    # ── Handoff: extract last 2-3 sentences of chapter N ──
+    try:
+        cd = data.drafts.chapters.get(ch_num)
+        if cd and cd.final and cd.final.content:
+            text = cd.final.content.strip()
+            # Take last ~150 chars as the handoff snapshot
+            handoff = text[-200:] if len(text) > 200 else text
+            # Clean: remove chapter markers, trim to sentence boundary
+            handoff = handoff.lstrip("第").lstrip("章").strip("：:。，, \n\t")
+            # Find last sentence break
+            last_period = max(handoff.rfind("。"), handoff.rfind("！"), handoff.rfind("？"))
+            if last_period > 30:
+                handoff = handoff[last_period + 1:]
+            envelope["handoff"] = handoff[:120]
+    except Exception:
+        pass
+
+    # ── Plan delta: check outline for chapter N+1 ──
+    try:
+        next_ch = ch_num + 1
+        if data.chapter_outline and data.chapter_outline.chapters:
+            for ch in data.chapter_outline.chapters:
+                if ch.chapter_number == next_ch:
+                    envelope["plan_delta"] = f"第{next_ch}章计划：{ch.chapter_title} — {ch.core_event}"
+                    break
+            if not envelope["plan_delta"]:
+                envelope["plan_delta"] = f"第{next_ch}章（章纲待规划）"
+    except Exception:
+        pass
+
+    # ── Protected: scan for marked elements (regex) ──
+    try:
+        protected = []
+        cd = data.drafts.chapters.get(ch_num)
+        if cd and cd.final and cd.final.content:
+            text = cd.final.content
+            # Look for explicit protected markers
+            import re
+            for match in re.finditer(r"\[保护[:：]([^\]]+)\]", text):
+                protected.append(match.group(1))
+        # Also protect key character states from character snapshot
+        if data.characters and data.characters.characters:
+            main_char = data.characters.characters[0]
+            if main_char.name:
+                protected.append(f"{main_char.name}存活且为主线角色")
+        if protected:
+            envelope["protected"] = "；".join(protected[:3])[:150]
+    except Exception:
+        pass
+
+    return envelope

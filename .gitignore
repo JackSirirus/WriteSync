@@ -25,6 +25,13 @@ temp/
 .claude/
 .superpowers/
 .omo/
+CLAUDE.md
+AGENTS.md
+MEMORY.md
+OPERATIONS.md
+
+# Runtime data
+docs/dynamic/
 
 # Logs
 logs/

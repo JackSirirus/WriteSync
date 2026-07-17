@@ -1,10 +1,14 @@
 # AGENTS.md — WriteSync 工作流规范
 
+> **思考层**：CLAUDE.md 定义了 6 阶段思考过程（苏格拉底追问 → 第一性原理 → 科斯定理 → 执行 → 墨菲审查 → 交付）。本文件定义对应的执行步骤。思考阶段与执行步骤的映射见 CLAUDE.md「Stage ↔ Execution 映射」。
+
 ## 项目开发流程
 
 ```
 用户提出想法/需求 → 用 skill 完善想法 → 输出任务计划 → 检查计划完整性/一致性/可行性 → 执行 → 验证
 ```
+
+> **对应 Stage 1-3**：brainstorming skill 执行苏格拉底追问，输出任务计划时执行第一性原理分析和科斯定理论证。
 
 ### 1. 收到新需求时
 
@@ -15,6 +19,8 @@
 5. 确认无误后开始编码
 
 ### 2. 修改代码前
+
+> **对应 Stage 4-5**：执行与编码阶段。先写测试（Stage4），改完后 code-reviewer 审查（Stage5）。
 
 1. 确认是否有相关测试
 2. 检查影响范围（哪些 Agent / Node / State 会变）
@@ -28,6 +34,8 @@
 5. 改完后可加载 `code-reviewer` skill 做结构化代码审查（含架构/安全/性能/可维护性检查）
 
 ### 3. 提交前检查
+
+> **对应 Stage 5 墨菲审查**：全量测试是最终防线，必须通过。
 
 ```bash
 # 全量后端测试
@@ -50,7 +58,7 @@ python tests/test_playwright.py
 - **LLM 客户端**: 经过 `create_llm_client()`，不直接 import OpenAI
 - **结构化输出**: 优先 `complete_structured()`，推理模型用默认 MD_JSON
 - **长文本生成**: `writer` 和 `proofreader` 用 `complete()` fallback（instructor 在大输出上超时）
-- **默认模型**: `qwen3.6-plus`（推理模型），非推理场景用 `deepseek-v4-flash`
+- **默认模型**: `deepseek-v4-pro`（编排器决策），`deepseek-v4-flash`（子 Agent）
 - **推理模型 content fallback**: 推理模型可能返回空 `content`，需 fallback 到 `reasoning_content`
 - **LLM 超时**: 180s（已从 120s 调整）
 - **环境变量**: `$env:LANGGRAPH_STRICT_MSGPACK="false"` 避免 msgpack 警告
@@ -101,6 +109,10 @@ python -c "from src.agents.context import build_writing_context; print('OK')"
 
 ### 7. 记忆协议
 
-- 每次对话结束问用户是否有值得记录的内容
-- 写入 `memory/YYYY-MM-DD.md`
-- 长期决策写入 `MEMORY.md`
+- **对话结束**：问用户"这次有值得记录的吗？"
+- **写入文件**：确认后写入 `memory/YYYY-MM-DD.md`
+- **长期决策**：同步更新 `MEMORY.md`
+- **即时记录**：用户说"记住这个"时立刻写入，不等结束
+- **蒸馏提醒**：每日记忆积累超过 7 天时，主动提议蒸馏到 MEMORY.md
+- **记忆来源**：以本项目文件为准，忽略外部记忆系统
+- **历史上下文**：需要时搜索 `memory/YYYY-MM-DD.md`

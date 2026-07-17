@@ -1545,3 +1545,47 @@ def test_provider(name: str):
         return JSONResponse({"ok": False, "error": "Provider not found"}, status_code=404)
     result = pm.test_connection(config)
     return JSONResponse(result)
+
+
+# ── Prompt Library API (Phase 1.2) ─────────────────────────────────────────
+
+@app.get("/api/prompts")
+def list_prompts():
+    """List all available prompt templates with metadata."""
+    from src.agents.prompts.manager import PromptManager
+    pm = PromptManager()
+    return JSONResponse({
+        "agents": pm.list_agents_detail(),
+        "genre_packs": pm.list_genre_packs(),
+    })
+
+
+@app.get("/api/prompts/{agent_name}")
+def get_prompt(agent_name: str, genre: str = ""):
+    """Get a specific prompt template (raw + rendered with optional genre pack)."""
+    from src.agents.prompts.manager import PromptManager
+    pm = PromptManager()
+    result = pm.get_prompt_detail(agent_name, genre_pack=genre if genre else None)
+    if result is None:
+        return JSONResponse({"ok": False, "error": f"Agent '{agent_name}' not found"}, status_code=404)
+    return JSONResponse({"ok": True, **result})
+
+
+@app.post("/api/prompts/customize")
+def customize_prompt(request: Request):
+    """Save user-customized prompt override."""
+    import json as _json
+    try:
+        body = _json.loads(request.body())
+    except Exception:
+        return JSONResponse({"ok": False, "error": "Invalid JSON"}, status_code=400)
+
+    agent = body.get("agent")
+    content = body.get("content", "")
+    if not agent or not content:
+        return JSONResponse({"ok": False, "error": "agent and content required"}, status_code=400)
+
+    from src.agents.prompts.manager import PromptManager
+    pm = PromptManager()
+    pm.save_custom_prompt(agent, content)
+    return JSONResponse({"ok": True, "agent": agent})

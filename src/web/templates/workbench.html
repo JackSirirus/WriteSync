@@ -487,6 +487,9 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
     <div class="nav-item" data-panel="providers">
       <span class="icon">⚙️</span> 模型配置
     </div>
+    <div class="nav-item" data-panel="prompts">
+      <span class="icon">📝</span> 提示词库
+    </div>
   </div>
   <div class="nav-section progress-section">
     <h3>创作进度</h3>
@@ -675,6 +678,7 @@ renderAllPanels();updateTags();updateSteps()}catch(e){}}
 function renderAllPanels(){
   if(!stateData)return;
   renderStory();renderCharacters();renderWorld();renderOutline();renderEditor();renderContext();renderFactLedger();renderForeshadowPanel();renderStateTablePanel();renderTimeline();renderStyle();renderReferences();renderUsage();renderReview();renderRules()
+  if(currentPanel==='prompts' && typeof renderPromptLibrary==='function') renderPromptLibrary();
 }
 function selectPanel(name){currentPanel=name;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.panel===name));renderAllPanels()}
 document.querySelectorAll('.nav-item').forEach(e=>e.addEventListener('click',()=>selectPanel(e.dataset.panel)));
@@ -2329,5 +2333,6 @@ sendChat = function(){
 <script src="/static/diff-panel.js"></script>
 <script src="/static/stale-warning.js"></script>
 <script src="/static/provider-config.js"></script>
+<script src="/static/prompt-library.js"></script>
 </body>
 </html>

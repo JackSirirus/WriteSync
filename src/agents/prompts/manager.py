@@ -179,3 +179,62 @@ class PromptManager:
         """Return the raw (unrendered) template text for inspection."""
         template = self._load_template(agent_name)
         return template.system_template
+
+    def get_prompt_detail(self, agent_name: str, genre_pack: str = "default"):
+        """Return full prompt detail: raw template, rendered, placeholders, genre vars."""
+        canonical = self._canonical_name(agent_name)
+        try:
+            template = self._load_template(canonical)
+        except FileNotFoundError:
+            return None
+
+        raw = template.system_template
+        genre_vars = self._load_genre_pack(genre_pack)
+        rendered = template.render_system(genre_vars)
+
+        # Extract placeholder names from raw template
+        import re
+        placeholders = list(set(re.findall(r"\{\{\s*(\w+)\s*\}\}", raw)))
+
+        return {
+            "agent": canonical,
+            "label": _AGENT_LABELS.get(canonical, canonical),
+            "raw_template": raw,
+            "rendered": rendered,
+            "placeholders": placeholders,
+            "genre_pack": genre_pack,
+            "genre_vars": {k: v for k, v in genre_vars.items() if k in placeholders},
+        }
+
+    def save_custom_prompt(self, agent_name: str, content: str):
+        """Save a user-customized prompt override to disk."""
+        canonical = self._canonical_name(agent_name)
+        custom_dir = _PKG_DIR / "custom"
+        custom_dir.mkdir(parents=True, exist_ok=True)
+        filepath = custom_dir / f"{canonical}.md"
+        filepath.write_text(content, encoding="utf-8")
+        # Bust cache so next load picks up the custom version
+        self._template_cache.pop(canonical, None)
+        logger.info("Custom prompt saved for agent '%s'", canonical)
+
+    def list_agents_detail(self) -> list[dict]:
+        """List all agents with metadata (name, label, description)."""
+        result = []
+        for name in sorted(_AGENT_TEMPLATES.keys()):
+            result.append({
+                "name": name,
+                "label": _AGENT_LABELS.get(name, name),
+            })
+        return result
+
+
+# Agent display labels (Chinese)
+_AGENT_LABELS = {
+    "story": "故事策划",
+    "character": "角色设定",
+    "world": "世界观",
+    "outline": "章纲规划",
+    "writer": "章节写作",
+    "proofreader": "校对润色",
+    "novel_review": "全书审查",
+}

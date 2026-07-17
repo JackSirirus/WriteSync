@@ -1,0 +1,8 @@
+{
+  "genre": "通用",
+  "era": "任意",
+  "power_system": "任意",
+  "tone": "中性",
+  "description": "通用默认配置，无特定题材倾向",
+  "default_platform": "起点"
+}

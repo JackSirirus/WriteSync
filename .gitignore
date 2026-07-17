@@ -1,0 +1,50 @@
+# Environment
+.env
+*.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Projects (user data)
+projects/
+
+# Temp
+temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Claude / AI config (local only)
+.claude/
+.superpowers/
+.omo/
+
+# Logs
+logs/
+*.txt
+
+# Debug / test output
+test_llm.py
+node_debug.txt
+test_log.txt
+graph_test_output.txt
+
+# Ephemeral notes in root
+测试导出项目_*.md
+故事项目_*.md
+空项目_*.md
+research_webnovel_methods.md
+
+# Memory
+memory/
+
+# OS
+.DS_Store
+Thumbs.db

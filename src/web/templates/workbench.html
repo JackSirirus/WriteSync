@@ -1,0 +1,2333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WriteSync 写作工作台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=DM+Sans:wght@400;500;700&family=Noto+Serif+SC:wght@400;600;700&display=swap" rel="stylesheet">
+<!-- Quill editor removed - not used, CDN caused timeout -->
+<style>
+:root {
+  --bg-deep: #0c0c10; --bg-surface: #14141c; --bg-elevated: #1c1c28;
+  --bg-hover: #242436; --border: #2a2a3e; --border-light: #363652;
+  --text-primary: #e8e4de; --text-secondary: #9a9490; --text-muted: #6b6560;
+  --accent: #d4a853; --accent-dim: #a67c3a; --accent-glow: rgba(212,168,83,0.15);
+  --accent-gradient: linear-gradient(135deg, #d4a853 0%, #a67c3a 100%);
+  --success: #5cb85c; --danger: #d9534f;
+  --radius-sm: 8px; --radius-md: 12px; --radius-lg: 16px;
+  --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  --font-serif: 'Crimson Pro', 'Noto Serif SC', Georgia, serif;
+  --font-sans: 'DM Sans', -apple-system, sans-serif;
+  --nav-width: 220px; --chat-width: 340px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100vh;overflow:hidden}
+body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-primary)}
+.app{display:flex;height:calc(100vh - 48px);overflow:hidden}
+.app>*{min-height:0}
+
+/* Header */
+.header{background:var(--bg-surface);border-bottom:1px solid var(--border);height:48px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;flex-shrink:0}
+.header-l{display:flex;align-items:center;gap:12px}
+.logo{font-family:var(--font-serif);font-size:17px;font-weight:700;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.logo span{font-weight:400;opacity:0.6}
+.step-indicator{display:flex;gap:6px;font-size:11px}
+.step-dot{width:8px;height:8px;border-radius:50%;background:var(--border);transition:background .2s}
+.step-dot.done{background:var(--success)}.step-dot.active{background:var(--accent)}
+.header-r{display:flex;align-items:center;gap:8px}
+.btn-sm{padding:4px 12px;border:1px solid var(--border);border-radius:100px;background:transparent;color:var(--text-muted);font-size:11px;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.btn-sm:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Layout */
+
+/* Left Nav */
+.nav{width:var(--nav-width);background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;height:100%}
+.nav-section{padding:16px}.nav-section+.nav-section{border-top:1px solid var(--border)}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;color:var(--text-secondary);transition:all .15s;margin-bottom:2px;border:1px solid transparent;user-select:none}
+.nav-item:hover{background:var(--bg-hover);color:var(--text-primary)}
+.nav-item.active{background:var(--accent-glow);color:var(--accent);border-color:var(--accent-dim);font-weight:600}
+.nav-item .icon{width:18px;text-align:center;font-size:14px;flex-shrink:0}
+.nav-item .tag{font-size:10px;padding:1px 6px;border-radius:4px;margin-left:auto}
+.nav-item .tag.done{background:rgba(92,184,92,0.15);color:var(--success)}
+.nav-item .tag.active{background:var(--accent-glow);color:var(--accent)}
+
+.progress-section h3{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:var(--text-muted);margin-bottom:10px}
+.progress-dots{display:flex;flex-wrap:wrap;gap:4px}
+.progress-dot{width:6px;height:6px;border-radius:50%;background:var(--border)}
+.progress-dot.done{background:var(--success)}.progress-dot.active{background:var(--accent)}
+
+/* Center Panel */
+.center{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;height:100%}
+.center #centerPanel{display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden}
+.center .interrupt-banner{flex-shrink:0}
+.panel-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.panel-header h2{font-family:var(--font-serif);font-size:18px;font-weight:600}
+.panel-header .actions{display:flex;gap:8px}
+.panel-body{flex:1;overflow-y:auto;padding:24px}
+.panel-body{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.panel-body::-webkit-scrollbar{width:5px}
+.panel-body::-webkit-scrollbar-track{background:transparent}
+.panel-body::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.panel-body::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+
+/* Right Chat */
+.chat{width:var(--chat-width);background:var(--bg-surface);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;min-height:0}
+.chat-header{padding:12px 16px;border-bottom:1px solid var(--border);font-size:12px;color:var(--text-muted);display:flex;align-items:center;gap:6px;flex-shrink:0}
+.chat-messages{flex:1 1 0;overflow-y:scroll!important;overflow-x:hidden;padding:12px 16px;min-height:0}
+.chat-messages{scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.chat-messages::-webkit-scrollbar{width:5px}.chat-messages::-webkit-scrollbar-track{background:transparent}.chat-messages::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}.chat-messages::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+.chat-input-area{padding:12px 16px;border-top:1px solid var(--border);flex-shrink:0}
+.chat-quick{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.chat-quick button{padding:3px 10px;border:1px solid var(--border);border-radius:100px;background:var(--bg-elevated);color:var(--text-muted);font-size:11px;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.chat-quick button:hover{border-color:var(--accent);color:var(--accent)}
+.chat-quick button.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.chat-input-row{display:flex;gap:6px}
+.chat-input-row textarea{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;resize:none;min-height:36px;outline:none}
+.chat-input-row textarea:focus{border-color:var(--accent-dim)}
+.chat-input-row textarea::placeholder{color:var(--text-muted)}
+.chat-input-row button{padding:6px 14px;background:var(--accent);border:none;border-radius:var(--radius-sm);color:var(--bg-deep);font-weight:600;font-size:12px;cursor:pointer;font-family:var(--font-sans)}
+
+/* Action buttons in chat */
+.chat-actions{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chat-actions button{padding:5px 12px;border:1px solid var(--border-light);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-secondary);font-size:12px;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.chat-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.chat-actions button.primary{border-color:var(--accent);background:var(--accent);color:var(--bg-deep);font-weight:600}
+.chat-actions button:disabled{opacity:.5;cursor:not-allowed}
+
+/* Setup overlay */
+.setup-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;z-index:100}
+.setup-panel{width:500px;background:var(--bg-surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:36px;box-shadow:var(--shadow);position:relative;max-height:90vh;overflow-y:auto}
+.setup-panel h2{font-family:var(--font-serif);font-size:22px;text-align:center;margin-bottom:6px}
+.setup-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border:none;background:transparent;color:var(--text-muted);font-size:22px;cursor:pointer;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:all .15s}
+.setup-close:hover{background:var(--bg-hover);color:var(--text-primary)}
+.setup-panel .subtitle{text-align:center;color:var(--text-muted);font-size:13px;margin-bottom:24px}
+.setup-panel label{display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;margin-top:14px;text-transform:uppercase;letter-spacing:1px}
+.setup-panel input,.setup-panel select,.setup-panel textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none}
+.setup-panel input:focus,.setup-panel select:focus,.setup-panel textarea:focus{border-color:var(--accent-dim)}
+.setup-panel textarea{resize:vertical;min-height:70px}
+.setup-panel select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%236b6560' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.btn-start{width:100%;margin-top:20px;padding:11px;border:none;border-radius:var(--radius-sm);background:var(--accent-gradient);color:var(--bg-deep);font-family:var(--font-sans);font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;letter-spacing:.5px}
+.btn-start:hover{opacity:.9}.btn-start:disabled{opacity:.5;cursor:not-allowed}
+
+/* Panel: Story */
+.story-field{margin-bottom:16px}.story-field label{font-size:12px;font-weight:600;color:var(--text-muted);display:block;margin-bottom:4px}
+.story-field input,.story-field textarea{width:100%;padding:8px 12px;border:1px solid transparent;border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none;resize:vertical;min-height:36px;transition:border-color .2s}
+.story-field input:focus,.story-field textarea:focus{border-color:var(--accent-dim)}
+.story-field textarea{min-height:60px}
+
+/* Panel: Characters */
+.char-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;position:relative}
+.char-card h3{font-family:var(--font-serif);font-size:16px;margin-bottom:4px}
+.char-card .role-tag{display:inline-block;padding:2px 8px;border-radius:4px;background:var(--accent-glow);color:var(--accent);font-size:11px;margin-bottom:8px}
+.char-card .field{font-size:12px;color:var(--text-secondary);margin:3px 0}.char-card .field strong{color:var(--text-primary)}
+.char-card .card-actions{position:absolute;top:12px;right:12px;display:flex;gap:4px}
+
+/* Panel: World */
+.world-section{margin-bottom:20px}.world-section h3{font-size:13px;font-weight:600;margin-bottom:10px;color:var(--accent-dim)}
+.world-field{margin-bottom:8px}.world-field label{font-size:11px;color:var(--text-muted);display:block}.world-field input{width:100%;padding:6px 10px;border:1px solid transparent;border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:12px;outline:none}.world-field input:focus{border-color:var(--accent-dim)}
+
+/* Panel: Outline */
+.chapter-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.chapter-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;cursor:pointer;transition:all .15s}
+.chapter-card:hover{border-color:var(--accent-dim)}
+.chapter-card .ch-num{font-size:11px;color:var(--text-muted)}.chapter-card .ch-title{font-size:14px;font-weight:600;margin:4px 0}.chapter-card .ch-event{font-size:12px;color:var(--text-secondary)}.chapter-card .ch-status{font-size:10px;margin-top:6px}
+.chapter-card .ch-status span{display:inline-block;padding:2px 6px;border-radius:4px}
+.chapter-card .ch-status .done{background:rgba(92,184,92,.15);color:var(--success)}
+.chapter-card .ch-status .draft{background:var(--accent-glow);color:var(--accent)}
+.chapter-card .ch-status .todo{background:var(--bg-hover);color:var(--text-muted)}
+
+/* Panel: Editor */
+.editor-container{display:flex;flex-direction:column;height:100%}
+.editor-tabs{display:flex;gap:4px;padding:8px 24px;border-bottom:1px solid var(--border);background:var(--bg-surface);flex-shrink:0}
+.editor-tab{padding:6px 16px;border-radius:var(--radius-sm) var(--radius-sm) 0 0;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s;border:1px solid transparent;border-bottom:none}
+.editor-tab:hover{color:var(--text-primary)}.editor-tab.active{color:var(--accent);background:var(--bg-elevated);border-color:var(--border)}
+.editor-ref{max-height:200px;overflow-y:auto;padding:12px 24px;background:var(--bg-elevated);border-bottom:1px solid var(--border);font-size:12px;color:var(--text-secondary);flex-shrink:0}
+.editor-ref .ref-item{margin-bottom:4px;line-height:1.5}
+.editor-ref .ref-label{color:var(--text-muted);font-size:11px}
+.editor-body{flex:1;padding:24px;overflow-y:auto}
+.editor-body textarea{width:100%;height:100%;min-height:400px;padding:16px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-serif);font-size:15px;line-height:1.8;resize:none;outline:none}.editor-body textarea:focus{border-color:var(--accent-dim)}
+.editor-footer{padding:12px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-muted);flex-shrink:0}
+.editor-footer .btns{display:flex;gap:8px}
+
+/* Panel: Review */
+.review-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
+.review-item{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px}
+.review-item.expired{opacity:.5;border-color:var(--border)}
+.review-item h4{font-size:13px;margin-bottom:4px}.review-item .time{font-size:10px;color:var(--text-muted)}
+.review-report{padding:16px;background:var(--bg-elevated);border-radius:var(--radius-sm);border:1px solid var(--border);line-height:1.8;font-size:13px}
+.review-report h3{font-size:15px;margin-bottom:12px}.review-report ul{padding-left:20px;margin:8px 0}.review-report li{margin-bottom:4px}
+
+/* Responsive */
+@media(max-width:1100px){.chat{display:none}.center{width:100%}#chatBtn{display:flex}}
+@media(max-width:900px){.nav{position:fixed;z-index:50;left:-260px;top:48px;bottom:0;transition:left .3s}.nav.open{left:0}#navToggle{display:flex}.center{width:100%}.panel-body{padding:12px}.panel-header{padding:8px 12px}.chat{display:none!important}}
+
+/* Floating chat button */
+#chatBtn{display:none;position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--bg-deep);border:none;font-size:20px;cursor:pointer;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.5);align-items:center;justify-content:center}
+#navToggle{display:none;cursor:pointer;padding:4px 8px;border:none;background:transparent;color:var(--text-primary);font-size:18px;font-family:var(--font-sans)}
+
+/* Buttons */
+.btn{padding:8px 18px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;cursor:pointer;transition:all .15s;min-width:44px;min-height:44px;display:inline-flex;align-items:center;justify-content:center}
+.btn:hover{border-color:var(--accent);color:var(--accent)}
+.btn.primary{border-color:var(--accent);background:var(--accent);color:var(--bg-deep);font-weight:600}.btn.primary:hover{background:var(--accent-dim)}
+.btn.danger{color:var(--danger);border-color:var(--danger)}.btn.danger:hover{background:rgba(217,83,79,.1)}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* Context Panel */
+.ctx-panel .ctx-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:12px}
+.ctx-card h3{font-family:var(--font-serif);font-size:14px;font-weight:600;margin-bottom:8px;color:var(--text-secondary)}
+.ctx-card h3 .ctx-sub{font-size:11px;font-weight:400;color:var(--text-muted);float:right}
+.ctx-card .ctx-body{font-size:13px;color:var(--text-primary);line-height:1.6;white-space:pre-wrap}
+.ctx-card .ctx-edit{width:100%;min-height:80px;padding:8px;background:var(--bg-deep);border:1px solid var(--accent-dim);border-radius:6px;color:var(--text-primary);font-family:var(--font-sans);font-size:13px;resize:vertical;outline:none}
+.ctx-card .ctx-footer{margin-top:8px;display:flex;gap:6px;justify-content:flex-end}
+.ctx-card .ctx-footer button{padding:4px 10px;border-radius:4px;font-size:11px;cursor:pointer;font-family:var(--font-sans);background:transparent;border:1px solid var(--border);color:var(--text-muted);transition:all .15s}
+.ctx-card .ctx-footer button:hover{border-color:var(--accent);color:var(--accent)}
+.ctx-card .ctx-footer button.save{background:var(--accent);color:var(--bg-deep);border-color:var(--accent)}
+.ctx-foreshadow-list{margin:0;padding:0;list-style:none;font-size:13px}
+.ctx-foreshadow-list li{padding:4px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;color:var(--text-secondary)}
+.ctx-foreshadow-list li.done{color:var(--success)}
+.ctx-foreshadow-list li button{font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:transparent;color:var(--text-muted);cursor:pointer;margin-left:auto}
+.ctx-foreshadow-list li button:hover{border-color:var(--accent-dim);color:var(--accent)}
+.ctx-add-fs{display:flex;gap:6px;margin-top:6px}
+.ctx-add-fs input{flex:1;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-deep);color:var(--text-primary);font-size:12px;font-family:var(--font-sans)}
+.ctx-add-fs button{padding:4px 8px;border:1px solid var(--accent-dim);border-radius:4px;background:var(--accent-glow);color:var(--accent);font-size:11px;cursor:pointer}
+.ctx-progress-bar{width:100%;height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin:8px 0}
+.ctx-progress-bar .fill{height:100%;background:var(--accent);border-radius:4px;transition:width .3s}
+.ctx-skeleton{height:80px;background:linear-gradient(90deg,var(--bg-elevated) 25%,var(--bg-hover) 50%,var(--bg-elevated) 75%);background-size:200% 100%;animation:ctx-shimmer 1.5s infinite;border-radius:var(--radius-md);margin-bottom:12px}
+@keyframes ctx-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.ctx-skeleton{animation:none}}
+.ctx-collapse{margin:8px 0;border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;font-size:12px}
+.ctx-collapse-title{padding:6px 10px;background:var(--bg-elevated);color:var(--text-muted);cursor:pointer;display:flex;justify-content:space-between;align-items:center;user-select:none}
+.ctx-collapse-title:hover{color:var(--text-secondary)}
+.ctx-collapse-arrow{transition:transform .2s}
+.ctx-collapse.open .ctx-collapse-arrow{transform:rotate(180deg)}
+.ctx-collapse-body{max-height:0;overflow:hidden;transition:max-height .3s;padding:0 10px;font-size:12px;line-height:1.5;color:var(--text-secondary)}
+.ctx-collapse.open .ctx-collapse-body{max-height:200px;overflow-y:auto;padding:8px 10px}
+.ctx-conflict-banner{background:rgba(212,168,83,.1);border:1px solid rgba(212,168,83,.3);border-radius:6px;padding:8px 12px;margin-top:8px;font-size:11px;color:var(--accent);display:flex;gap:8px;align-items:center}
+.ctx-conflict-banner button{font-size:11px;padding:2px 8px;border:1px solid var(--accent-dim);border-radius:4px;background:transparent;color:var(--accent);cursor:pointer}
+
+/* Interrupt banner */
+.interrupt-banner{display:none;align-items:center;gap:12px;background:rgba(212,168,83,.08);border:1px solid rgba(212,168,83,.25);border-radius:8px;padding:10px 16px;margin:8px 12px 0;animation:ctx-fadein .2s ease-out;flex-shrink:0}
+.interrupt-banner .icon{font-size:14px;flex-shrink:0}
+.interrupt-banner .text{font-size:12px;color:var(--text-primary);flex:1;line-height:1.4;min-width:0}
+.interrupt-banner .actions{display:flex;gap:5px;flex-shrink:0;flex-wrap:wrap}
+.interrupt-banner .actions button{font-size:10px;padding:5px 12px;border-radius:5px;cursor:pointer;transition:all .1s;font-family:var(--font-sans);font-weight:500}
+.interrupt-banner .actions .primary{background:var(--accent);color:var(--bg-deep);border:none}
+.interrupt-banner .actions .primary:hover{background:var(--accent-dim)}
+.interrupt-banner .actions .secondary{background:transparent;border:1px solid var(--border-light);color:var(--text-secondary)}
+.interrupt-banner .actions .secondary:hover{border-color:var(--accent);color:var(--accent)}
+
+/* Progress ring */
+.progress-ring-wrap{display:flex;align-items:center;gap:16px;margin-top:4px}
+.progress-ring{position:relative;width:56px;height:56px;flex-shrink:0}
+.progress-ring svg{transform:rotate(-90deg);width:56px;height:56px}
+.progress-ring svg circle{fill:none;stroke-width:4;stroke-linecap:round}
+.progress-ring .bg{stroke:var(--border)}
+.progress-ring .fg{stroke:var(--accent);transition:stroke-dashoffset .6s ease}
+.progress-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:var(--text-primary)}
+.progress-ring-info{font-size:11px;color:var(--text-muted);line-height:1.5}
+.progress-ring-info strong{color:var(--text-primary)}
+.char-count{font-size:10px;color:var(--text-muted);float:right}.char-count.over{color:var(--danger)}
+/* fade-in animation */
+@keyframes ctx-fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.ctx-card.fade-in{animation:ctx-fadein .2s ease-out}
+@media (prefers-reduced-motion:reduce){.ctx-card.fade-in{animation:none}}
+/* Project list */
+.project-list{padding:12px 0;display:flex;flex-direction:column;gap:8px;width:100%}
+.project-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;cursor:pointer;transition:all .15s;width:100%;text-align:left;font-family:var(--font-sans);color:var(--text-primary)}
+.project-card:hover{border-color:var(--accent);background:var(--bg-hover)}
+.project-card .pname{font-weight:600;font-size:15px;margin-bottom:4px}
+.project-card .pmeta{font-size:12px;color:var(--text-muted);display:flex;gap:12px}
+.project-card .pmeta span{display:inline-flex;align-items:center;gap:4px}
+.project-card .pstatus{font-size:11px;padding:1px 8px;border-radius:4px;background:rgba(92,184,92,0.15);color:var(--success)}
+.project-card .pstatus.drafting{background:rgba(212,168,83,0.15);color:var(--accent)}
+.project-card .pstatus.paused{background:rgba(100,100,100,0.15);color:var(--text-muted)}
+.setup-divider{display:flex;align-items:center;gap:12px;width:100%;margin:8px 0;color:var(--text-muted);font-size:12px}
+.setup-divider::before,.setup-divider::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* Enhanced project card */
+.project-card-v2{background:var(--bg-elevated);border:1px solid var(--border);border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;width:100%;text-align:left;font-family:var(--font-sans);color:var(--text-primary);position:relative}
+.project-card-v2:hover{border-color:var(--accent);background:var(--bg-hover);transform:translateY(-1px)}
+.project-card-v2 .top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.project-card-v2 .name{font-weight:600;font-size:15px}
+.project-card-v2 .platform{font-size:10px;color:var(--text-muted);padding:2px 6px;border-radius:4px;background:var(--bg-hover);margin-left:6px}
+.project-card-v2 .badge-group{display:flex;gap:4px;align-items:center}
+.project-card-v2 .stage-badge{font-size:10px;padding:2px 8px;border-radius:4px;background:var(--accent-glow);color:var(--accent);border:1px solid rgba(212,168,83,.2)}
+.project-card-v2 .stage-badge.done{background:rgba(92,184,92,.12);color:var(--success);border-color:rgba(92,184,92,.2)}
+.project-card-v2 .story-line{font-size:12px;color:var(--text-muted);margin-bottom:10px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.project-card-v2 .stats{display:flex;gap:12px;font-size:11px;color:var(--text-secondary);margin-bottom:10px}
+.project-card-v2 .stats span{display:inline-flex;align-items:center;gap:4px}
+.project-card-v2 .progress-mini{display:flex;align-items:center;gap:8px}
+.project-card-v2 .progress-mini .bar{flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden}
+.project-card-v2 .progress-mini .bar .fill{height:100%;background:var(--accent-gradient);border-radius:2px;transition:width .4s}
+.project-card-v2 .progress-mini .pct{font-size:11px;color:var(--text-muted);min-width:32px;text-align:right}
+.project-card-v2 .actions{display:flex;gap:4px;margin-top:8px;padding-top:10px;border-top:1px solid var(--border)}
+.project-card-v2 .actions button{font-size:10px;padding:4px 10px;border-radius:4px;cursor:pointer;font-family:var(--font-sans);transition:all .1s}
+.project-card-v2 .actions .primary{background:var(--accent);color:var(--bg-deep);border:none}
+.project-card-v2 .actions .primary:hover{background:var(--accent-dim)}
+.project-card-v2 .actions .ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.project-card-v2 .actions .ghost:hover{border-color:var(--accent);color:var(--accent)}
+.project-card-v2 .actions .danger{background:transparent;border:1px solid transparent;color:var(--danger);margin-left:auto}
+.project-card-v2 .actions .danger:hover{border-color:var(--danger)}
+
+/* Project grid page (Xiaohongshu-style) */
+.project-grid-page{display:flex;flex-direction:column;min-height:100vh;max-height:100vh;background:var(--bg-deep)}
+.project-grid-page .grid-scroll{flex:1;overflow-y:auto;min-height:0;scrollbar-width:thin;scrollbar-color:var(--border) transparent}
+.project-grid-page .grid-scroll::-webkit-scrollbar{width:5px}
+.project-grid-page .grid-scroll::-webkit-scrollbar-track{background:transparent}
+.project-grid-page .grid-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+.project-grid-page .grid-scroll::-webkit-scrollbar-thumb:hover{background:var(--border-light)}
+.grid-header{display:flex;align-items:center;justify-content:space-between;padding:20px 32px;border-bottom:1px solid var(--border);flex-shrink:0}
+.grid-header .logo{font-family:var(--font-serif);font-size:20px;font-weight:700;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.grid-header .logo span{font-weight:400;opacity:.6}
+.grid-header .actions{display:flex;gap:8px}
+.grid-header .actions button{padding:8px 18px;border-radius:8px;font-size:13px;cursor:pointer;font-family:var(--font-sans);transition:all .15s;font-weight:500}
+.grid-header .actions .primary{background:var(--accent);color:var(--bg-deep);border:none}
+.grid-header .actions .primary:hover{background:var(--accent-dim)}
+.grid-header .actions .ghost{background:transparent;border:1px solid var(--border);color:var(--text-secondary)}
+.grid-header .actions .ghost:hover{border-color:var(--accent);color:var(--accent)}
+.grid-hero{padding:48px 32px 24px;text-align:center}
+.grid-hero h1{font-family:var(--font-serif);font-size:28px;font-weight:700;margin-bottom:8px}
+.grid-hero p{font-size:14px;color:var(--text-muted);max-width:480px;margin:0 auto;line-height:1.6}
+.grid-cards{padding:0 32px 48px;flex:1;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;max-width:1200px;margin:0 auto;width:100%}
+.grid-card{background:var(--bg-surface);border:1px solid var(--border);border-radius:14px;padding:20px;cursor:pointer;transition:all .2s;position:relative;display:flex;flex-direction:column}
+.grid-card:hover{border-color:var(--accent);background:var(--bg-elevated);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.25)}
+.grid-card .card-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+.grid-card .card-title{font-size:16px;font-weight:600;line-height:1.3}
+.grid-card .card-platform{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--bg-hover);color:var(--text-muted);margin-left:8px;white-space:nowrap}
+.grid-card .card-badge{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--accent-glow);color:var(--accent);border:1px solid rgba(212,168,83,.2);white-space:nowrap}
+.grid-card .card-badge.done{background:rgba(92,184,92,.12);color:var(--success);border-color:rgba(92,184,92,.2)}
+.grid-card .card-story{font-size:12px;color:var(--text-muted);line-height:1.5;margin-bottom:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.4em}
+.grid-card .card-stats{display:flex;gap:14px;font-size:11px;color:var(--text-secondary);margin-bottom:12px}
+.grid-card .card-stats span{display:inline-flex;align-items:center;gap:4px}
+.grid-card .card-progress{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.grid-card .card-progress .track{flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden}
+.grid-card .card-progress .track .fill{height:100%;background:var(--accent-gradient);border-radius:3px;transition:width .5s}
+.grid-card .card-progress .pct{font-size:12px;color:var(--text-muted);min-width:36px;text-align:right;font-variant-numeric:tabular-nums}
+.grid-card .card-actions{display:flex;gap:6px;margin-top:auto;padding-top:14px;border-top:1px solid var(--border)}
+.grid-card .card-actions button{font-size:11px;padding:5px 14px;border-radius:6px;cursor:pointer;font-family:var(--font-sans);transition:all .1s}
+.grid-card .card-actions .primary{background:var(--accent);color:var(--bg-deep);border:none;font-weight:500}
+.grid-card .card-actions .primary:hover{background:var(--accent-dim)}
+.grid-card .card-actions .ghost{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.grid-card .card-actions .ghost:hover{border-color:var(--accent);color:var(--accent)}
+.grid-card .card-actions .danger{background:transparent;border:1px solid transparent;color:var(--danger);margin-left:auto}
+.grid-card .card-actions .danger:hover{border-color:var(--danger)}
+.grid-empty{padding:80px 32px;text-align:center;grid-column:1/-1}
+.grid-empty .icon{font-size:48px;margin-bottom:16px}
+.grid-empty p{font-size:14px;color:var(--text-muted)}
+
+/* Loading overlay */
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:200}
+.loading-box{background:var(--bg-surface);border:1px solid var(--border);border-radius:16px;padding:32px 40px;text-align:center;min-width:280px}
+.loading-spinner{width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 16px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-box .title{font-size:15px;font-weight:600;margin-bottom:4px}
+.loading-box .sub{font-size:12px;color:var(--text-muted)}
+.loading-dots{display:flex;gap:6px;justify-content:center;margin-top:16px}
+.loading-dots span{width:6px;height:6px;border-radius:50%;background:var(--border);animation:ld .8s ease-in-out infinite}
+.loading-dots span:nth-child(2){animation-delay:.15s}
+.loading-dots span:nth-child(3){animation-delay:.3s}
+@keyframes ld{0%,100%{background:var(--border)}50%{background:var(--accent)}}
+.edit-panel{background:var(--bg-elevated);border:1px solid var(--accent);border-radius:8px;padding:14px;margin:8px 0}
+.edit-panel-header{font-weight:700;color:var(--accent);margin-bottom:10px;font-size:14px}
+.edit-form textarea,.edit-form input{background:var(--bg-base);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:13px;font-family:monospace}
+.edit-actions button{padding:6px 14px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:13px;background:var(--bg-base);color:var(--text-primary)}
+.edit-actions button.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.edit-actions button:hover{opacity:.85}
+/* Inspire tabs */
+.inspire-tab{padding:6px 14px;border:1px solid var(--border);border-radius:100px;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.inspire-tab:hover{border-color:var(--accent-dim);color:var(--text-secondary)}
+.inspire-tab.active{background:var(--accent-glow);color:var(--accent);border-color:var(--accent-dim);font-weight:600}
+/* Tag-style input */
+.tag-input-wrap{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);min-height:36px;align-items:center;cursor:text}
+.tag-input-wrap .tag-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;background:var(--accent-glow);color:var(--accent);font-size:11px;border:1px solid var(--accent-dim)}
+.tag-input-wrap .tag-chip .tag-remove{cursor:pointer;font-size:14px;line-height:1;opacity:.6;transition:opacity .15s}
+.tag-input-wrap .tag-chip .tag-remove:hover{opacity:1}
+.tag-input-wrap input{border:none!important;background:transparent!important;color:var(--text-primary)!important;font-family:var(--font-sans)!important;font-size:12px!important;outline:none!important;flex:1;min-width:80px;padding:2px 0!important}
+.tag-input-wrap input::placeholder{color:var(--text-muted)}
+.rules-panel label{display:block;font-size:11px;font-weight:600;color:var(--text-secondary);margin-bottom:4px;margin-top:14px;text-transform:uppercase;letter-spacing:.5px}
+.rules-panel input,.rules-panel select,.rules-panel textarea{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none}
+.rules-panel input:focus,.rules-panel select:focus,.rules-panel textarea:focus{border-color:var(--accent-dim)}
+.rules-panel textarea{resize:vertical;min-height:70px}
+.rules-panel .btn-save{padding:8px 20px;margin-top:14px;border:none;border-radius:var(--radius-sm);background:var(--accent-gradient);color:var(--bg-deep);font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.rules-panel .btn-save:hover{opacity:.9}
+</style>
+</head>
+<body>
+
+<!-- Project Grid Page (Xiaohongshu-style, full page) -->
+<div id="projectGrid" style="display:none">
+<div class="project-grid-page">
+  <div class="grid-header">
+    <div><span class="logo">WriteSync<span> 共笔</span></span></div>
+    <div class="actions">
+      <button class="primary" onclick="showNewProjectForm()">＋ 新建项目</button>
+    </div>
+  </div>
+  <div class="grid-scroll">
+    <div class="grid-hero">
+      <h1>继续创作</h1>
+      <p>选择已有的项目继续，或开启一个全新的故事。</p>
+    </div>
+    <div class="grid-cards" id="projectGridList"></div>
+  </div>
+</div>
+</div>
+
+<!-- New Project Modal -->
+<div class="setup-overlay" id="setupOverlay" style="display:none">
+<div class="setup-panel">
+<button class="setup-close" onclick="hideNewProjectForm()">&times;</button>
+<div id="newProjectView" style="width:100%">
+  <h2 style="font-size:20px">开始创作</h2>
+  <p class="subtitle">你的故事 — AI 幕僚团队与你一起打磨</p>
+  <label>故事想法</label><textarea id="ideaInput" placeholder="例如：程序员穿越修仙世界..." rows="3"></textarea>
+  <label>目标平台</label><select id="platformInput"><option>起点</option><option>番茄</option><option>飞卢</option><option>纵横</option></select>
+  <label>模型</label><select id="modelInput"><option value="deepseek-v4-flash" selected>deepseek-v4-flash</option><option value="qwen3.6-plus">qwen3.6-plus</option></select>
+  <label>流程</label><select id="modeInput"><option value="full">全流程</option><option value="planning">仅策划</option></select>
+  <div style="display:flex;gap:8px;margin-top:14px">
+    <button class="btn-start" id="startBtn" onclick="startSession()" style="flex:2">开始创作</button>
+    <button class="btn" onclick="showInspireModal()" style="flex:1;background:var(--bg-elevated);color:var(--accent);border-color:var(--accent-dim);font-weight:600">💡 灵感反推</button>
+  </div>
+</div>
+</div></div>
+
+<!-- Inspire Modal -->
+<div class="setup-overlay" id="inspireOverlay" style="display:none">
+<div class="setup-panel" style="width:640px;max-height:92vh">
+<button class="setup-close" onclick="hideInspireModal()">&times;</button>
+<h2 style="font-size:20px">💡 灵感反推</h2>
+<p class="subtitle">输入一个简短的想法，AI 帮你展开成完整的写作企划</p>
+<label>灵感想法</label><textarea id="inspireSeed" placeholder="例如：武侠+重生｜玄幻+穿越｜末世+修真...或者一段场景："一个被宗门抛弃的废柴，意外激活了上古血脉"..." rows="3"></textarea>
+<div style="display:flex;gap:8px;margin-top:14px">
+  <button class="btn-start" id="inspireBtn" onclick="doInspire()" style="flex:2">生成灵感</button>
+  <select id="inspirePlatform" style="padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-size:13px;flex:1"><option>起点</option><option>番茄</option><option>飞卢</option><option>纵横</option></select>
+</div>
+<div id="inspireError" style="display:none;color:var(--danger);font-size:13px;margin-top:12px;padding:10px;background:rgba(217,83,79,0.1);border:1px solid var(--danger);border-radius:var(--radius-sm)"></div>
+<div id="inspireResult" style="display:none;margin-top:16px">
+  <div style="display:flex;gap:6px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px">
+    <button class="inspire-tab active" onclick="switchInspireTab('story')" data-itab="story">故事核心</button>
+    <button class="inspire-tab" onclick="switchInspireTab('world')" data-itab="world">世界观</button>
+    <button class="inspire-tab" onclick="switchInspireTab('chars')" data-itab="chars">角色</button>
+    <button class="inspire-tab" onclick="switchInspireTab('outline')" data-itab="outline">大纲</button>
+  </div>
+  <div id="inspireTabContent" style="max-height:350px;overflow-y:auto;font-size:13px;line-height:1.8"></div>
+  <button class="btn-start" onclick="adoptInspire()" style="margin-top:14px" id="adoptInspireBtn">✨ 采纳并创建项目</button>
+</div>
+</div></div>
+
+<!-- Loading Overlay -->
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-box">
+    <div class="loading-spinner"></div>
+    <div class="title" id="loadTitle">加载项目</div>
+    <div class="sub" id="loadSub">正在重建创作上下文...</div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<!-- Main Workbench -->
+<div id="workbench" style="display:none">
+
+<!-- Header -->
+<div class="header">
+  <div class="header-l">
+    <button id="navToggle" onclick="document.getElementById('leftNav').classList.toggle('open')">☰</button>
+    <span class="logo">WriteSync<span> 共笔</span></span>
+    <div class="step-indicator" id="stepDots"></div>
+  </div>
+  <div class="header-r">
+    <button class="btn-sm" onclick="backToGrid()">返回项目列表</button>
+    <button class="btn-sm" id="exportBtn" onclick="exportNovel('md')" style="display:none">导出</button>
+  </div>
+</div>
+<button id="chatBtn" onclick="document.getElementById('chatPanel').style.display=document.getElementById('chatPanel').style.display==='flex'?'none':'flex'">💬</button>
+
+<div class="app">
+<!-- Left Nav -->
+<div class="nav" id="leftNav">
+  <div class="nav-section">
+    <div class="nav-item active" data-panel="story"><span class="icon">◆</span>故事大纲<span class="tag" id="tag-story"></span></div>
+    <div class="nav-item" data-panel="characters"><span class="icon">👥</span>角色管理<span class="tag" id="tag-characters"></span></div>
+    <div class="nav-item" data-panel="world"><span class="icon">🌍</span>世界观<span class="tag" id="tag-world"></span></div>
+    <div class="nav-item" data-panel="outline"><span class="icon">📑</span>章纲视图<span class="tag" id="tag-outline"></span></div>
+    <div class="nav-item" data-panel="editor"><span class="icon">✏️</span>写作编辑器<span class="tag" id="tag-editor"></span></div>
+  </div>
+  <div class="nav-section">
+    <div class="nav-item" data-panel="context">
+      <span class="icon">📋</span> 写作上下文
+    </div>
+    <div class="nav-item" data-panel="factledger">
+      <span class="icon">📋</span> 事实账本
+    </div>
+    <div class="nav-item" data-panel="rules">
+      <span class="icon">📏</span> 创作规则
+    </div>
+    <div class="nav-item" data-panel="foreshadow">
+      <span class="icon">🔮</span> 伏笔看板
+    </div>
+    <div class="nav-item" data-panel="statetable">
+      <span class="icon">📊</span> 状态表
+    </div>
+    <div class="nav-item" data-panel="timeline">
+      <span class="icon">📅</span> 故事年表
+    </div>
+    <div class="nav-item" data-panel="style">
+      <span class="icon">🎨</span> 文风画像
+    </div>
+    <div class="nav-item" data-panel="references">
+      <span class="icon">📚</span> 参考资料
+    </div>
+    <div class="nav-item" data-panel="usage">
+      <span class="icon">📊</span> 消耗统计
+    </div>
+    <div class="nav-item" data-panel="review">
+      <span class="icon">📊</span> 全书审查 <span class="tag" id="tag-review">-</span>
+    </div>
+    <div class="nav-item" data-panel="providers">
+      <span class="icon">⚙️</span> 模型配置
+    </div>
+  </div>
+  <div class="nav-section progress-section">
+    <h3>创作进度</h3>
+    <div class="progress-dots" id="progressDots"></div>
+  </div>
+</div>
+
+<!-- Center -->
+<div class="center" id="centerWrapper">
+  <div class="interrupt-banner" id="interruptBanner">
+    <span class="icon">⏸</span>
+    <span class="text" id="interruptText"></span>
+    <div class="actions" id="interruptActions"></div>
+  </div>
+  <div id="centerPanel"></div>
+</div>
+
+<!-- Right Chat -->
+<div class="chat" id="chatPanel">
+  <div class="chat-header">AI 协作对话 <span id="chatStatus" style="margin-left:auto;font-size:11px;color:var(--text-muted)">等待开始</span></div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-msg system"><div class="role">WriteSync</div>欢迎使用写作工作台。告诉我你的故事想法。</div>
+  </div>
+  <div class="chat-input-area">
+    <div class="chat-quick" id="quickBtns"></div>
+    <div class="chat-actions" id="chatActions"></div>
+    <div class="chat-input-row" style="margin-top:8px">
+      <textarea id="chatInput" placeholder="输入指令或反馈..." rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"></textarea>
+      <button onclick="sendChat()">发送</button>
+    </div>
+  </div>
+</div>
+
+</div></div>
+
+<script>
+let sessionId = null, currentPanel = 'story', submitting = false, stateData = null;
+let panelContent = {};
+let hasInterrupt = false;
+const PANELS = ['story','characters','world','outline','editor','context','factledger','rules','foreshadow','statetable','timeline','style','references','usage','review','providers'];
+
+// Setup
+function showSetup(){submitting=false;sessionId=null;disconnectSSE();localStorage.removeItem('ws_session');document.getElementById('setupOverlay').style.display='flex';document.getElementById('workbench').style.display='none';document.getElementById('exportBtn').style.display='none';const b=document.getElementById('startBtn');if(b){b.disabled=false;b.textContent='开始创作 →'};loadProjects()}
+async function startSession(){
+  const idea = document.getElementById('ideaInput').value;
+  const platform = document.getElementById('platformInput').value;
+  const model = document.getElementById('modelInput').value;
+  await startV2Session(idea, platform, model);
+}
+
+// Chat
+function addChat(role,text,html){const area=document.getElementById('chatMessages');const wasAtBottom=area.scrollHeight-area.scrollTop<=area.clientHeight+50;const d=document.createElement('div');d.className='chat-msg '+role;d.innerHTML='<div class="role">'+(role==='system'?'WriteSync':'你')+'</div>'+ (html?text:text.replace(/\n/g,'<br>'));area.appendChild(d);if(wasAtBottom)d.scrollIntoView({behavior:'smooth',block:'end'})}
+function sendChat(){const inp=document.getElementById('chatInput');const txt=inp.value.trim();if(!txt||!sessionId)return;inp.value='';addChat('user',txt);if(hasInterrupt){var intr=document.getElementById('interruptText');var itxt=intr?intr.textContent:'';var act=(itxt.includes('一句话')||itxt.includes('故事核心'))?'edit':'modify';resume(act,txt)}else{resume('chat',txt)}}
+
+// Quick command buttons
+function renderQuickBtns(){
+  const qb=document.getElementById('quickBtns');if(!qb)return;
+  const steps=[
+    {l:'选题',a:'confirm'},{l:'一句话',a:'confirm'},{l:'五句话',a:'confirm'},
+    {l:'角色',a:'confirm'},{l:'世界观',a:'confirm'},{l:'章纲',a:'confirm'},{l:'写稿',a:'y'}
+  ];
+  qb.innerHTML=steps.map(s=>'<button onclick="if(!hasInterrupt)resume(\''+s.a+'\')" class="'+(hasInterrupt?'disabled':'')+'">'+s.l+'</button>').join('');
+}
+renderQuickBtns();
+
+function showActions(interrupts){
+  hasInterrupt = interrupts && interrupts.length > 0;
+  updateChatInputState();
+  // Topic cards: if suggestions exist, show clickable cards
+  // Clear old topic cards first
+  document.querySelectorAll('[id^="topicCard"]').forEach(e=>e.remove());
+  if(stateData?.topic?.suggestions && stateData.topic.suggestions.length>0 && stateData.topic.selected<0){
+    const container=document.getElementById('chatMessages');
+    let cardHtml='<div class="chat-msg system"><div class="role">WriteSync</div>📋 选题建议（点击选择）：</div>';
+    stateData.topic.suggestions.forEach((s,i)=>{
+      cardHtml+='<div class="chat-msg system" id="topicCard'+i+'" style="position:relative;background:var(--bg-elevated);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:6px 0;transition:border-color .2s">';
+      // Edit button
+      cardHtml+='<span onclick="event.stopPropagation();editTopicCard('+i+')" title="编辑选题" style="position:absolute;top:6px;right:8px;cursor:pointer;font-size:12px;color:var(--text-muted);opacity:0.6" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.6\'">✎</span>';
+      // Clickable area for selection
+      cardHtml+='<div onclick="selectTopicCard('+i+')" style="cursor:pointer">';
+      cardHtml+='<strong style="color:var(--accent)">'+esc(s.title)+'</strong> ';
+      cardHtml+='<span style="color:var(--text-muted)">'+esc(s.genre)+'/'+esc(s.sub_genre)+'</span><br>';
+      cardHtml+='<span style="font-size:12px;color:var(--text-secondary)">'+esc(s.core_selling_point||'').slice(0,80)+'</span><br>';
+      cardHtml+='<span style="font-size:11px;color:var(--text-muted)">热度：'+esc(s.heat_level||'')+' | 难度：'+esc(s.difficulty||'')+'</span>';
+      cardHtml+='</div></div>';
+    });
+    document.getElementById('chatMessages').insertAdjacentHTML('beforeend', cardHtml);
+    return;  // 选题卡片已包含点击选择，不需要按钮
+  }
+
+  const c=document.getElementById('chatActions');c.innerHTML='';const t=interrupts.join(' ');
+  function b(label,act,pri){const e=document.createElement('button');e.textContent=label;if(pri)e.className='primary';e.onclick=()=>resume(act);c.appendChild(e)}
+  // Also populate interrupt banner
+  function bannerBtn(label,act,cls){const e=document.createElement('button');e.textContent=label;e.className=cls||'secondary';e.onclick=()=>resume(act);document.getElementById('interruptActions').appendChild(e)}
+  const banner=document.getElementById('interruptBanner');
+  const bannerText=document.getElementById('interruptText');
+  bannerText.textContent=t.length>120?t.slice(0,120)+'...':t;
+  document.getElementById('interruptActions').innerHTML='';
+  let hasBanner=false;
+  if(t.includes('您的一句话')||t.includes('一句话')&&t.includes('故事核心')){b('提交','edit',true);b('确认已有','confirm');bannerBtn('提交','edit','primary');bannerBtn('确认已有','confirm','secondary');hasBanner=true}
+  else if(t.includes('确认作为故事核心')){b('确认','y',true);b('再改改','n');bannerBtn('确认','y','primary');bannerBtn('再改改','n','secondary');hasBanner=true}
+  else if(t.includes('确认故事摘要')||t.includes('提出修改意见')){b('确认','confirm',true);b('提意见修改','modify');bannerBtn('确认','confirm','primary');bannerBtn('提意见修改','modify','secondary');hasBanner=true}
+  else if(t.includes('请确认角色设定')){b('确认','confirm',true);b('提意见修改','modify');bannerBtn('确认','confirm','primary');bannerBtn('提意见修改','modify','secondary');hasBanner=true}
+  else if(t.includes('请确认世界观设定')){b('确认','confirm',true);b('提意见修改','modify');bannerBtn('确认','confirm','primary');bannerBtn('提意见修改','modify','secondary');hasBanner=true}
+  else if(t.includes('请确认章纲')||t.includes('确认章纲')){b('确认','confirm',true);b('提意见修改','modify');bannerBtn('确认','confirm','primary');bannerBtn('提意见修改','modify','secondary');hasBanner=true}
+  else if(t.includes('初稿')&&t.includes('确认')){b('确认继续','y',true);b('提意见重写','m');b('直接重写','n');bannerBtn('确认继续','y','primary');bannerBtn('提意见重写','m','secondary');bannerBtn('直接重写','n','secondary');hasBanner=true}
+  else if(t.includes('编辑完成')){b('确认继续','y',true);b('提意见编辑','n');bannerBtn('确认继续','y','primary');bannerBtn('提意见编辑','n','secondary');hasBanner=true}
+  else if(t.includes('终稿')&&t.includes('确认发布')){b('确认发布','y',true);b('从头重写','n');bannerBtn('确认发布','y','primary');bannerBtn('从头重写','n','secondary');hasBanner=true}
+  else if(t.includes('全书审查')){b('确认','y',true);b('标记待修改','n');bannerBtn('确认','y','primary');bannerBtn('标记待修改','n','secondary');hasBanner=true}
+  else if(t.includes('继续写')){b('继续','y',true);b('结束','n');bannerBtn('继续','y','primary');bannerBtn('结束','n','secondary');hasBanner=true}
+  else if(t.includes('准备开始写作')){b('开始写作','y',true);b('跳过','n');bannerBtn('开始写作','y','primary');bannerBtn('跳过','n','secondary');hasBanner=true}
+  else if(t.includes('选择选题')||t.includes('请选择')){b('确认','confirm',true);b('重新生成','regenerate_topic');hasBanner=true}
+  else if(t.includes('请先生成')){resume('proceed');return}
+  else{b('继续','y',true);bannerBtn('继续','y','primary');hasBanner=true}
+  banner.style.display=hasBanner?'flex':'none'
+}
+
+async function resume(action,feedback){
+  // V2 mode: delegate to resumeV2
+  if(v2Mode && v2ProjectId){
+    console.log('[resume→V2] action=%s feedback=%s', action, feedback || '');
+    // 映射 V1 action 到 V2 approved/feedback
+    const approved = (action === 'y' || action === 'confirm' || action === 'edit' || action === 'select_topic');
+    const fb = (action === 'select_topic' && feedback)
+      ? ('选题: ' + feedback)
+      : (feedback || action);
+    return resumeV2(approved ? 'y' : action, fb);
+  }
+  if(submitting||!sessionId)return;submitting=true;setBtnsDisabled(true);
+  document.getElementById('interruptBanner').style.display='none';
+  console.log('[resume] action=%s feedback=%s', action, feedback || '');
+  document.getElementById('chatActions').innerHTML='';
+  lastRetryCount=0;
+  setChatStatus('⏳ AI 生成中');
+  const f=new FormData();f.append('action',action);if(feedback)f.append('feedback',feedback);
+  addChat('system','思考中...');
+  try{
+    const r=await fetch('/api/resume/'+sessionId,{method:'POST',body:f});const d=await r.json();
+    document.getElementById('chatMessages').lastChild?.remove();
+    if(d.error){addChat('system','❌ '+d.error);addChat('system','💡 建议切换到默认模型 qwen3.6-plus 后重新开始');hasInterrupt=false;setChatStatus('错误')}
+    else if(d.interrupt&&d.interrupt.length>0){
+      hasInterrupt=true;d.interrupt.forEach(m=>addChat('system',m));await refreshState();showActions(d.interrupt);setChatStatus('等待你的选择')
+    }
+    else if(d.done){hasInterrupt=false;addChat('system','✅ 流程完成！');document.getElementById('exportBtn').style.display='inline';await refreshState();setChatStatus('已完成')}
+    else{hasInterrupt=false}
+  }catch(e){addChat('system','错误: '+e.message)}
+  submitting=false;setBtnsDisabled(false)
+}
+function setBtnsDisabled(d){document.querySelectorAll('#chatActions button').forEach(e=>e.disabled=d)}
+
+let statusStartTime = 0;
+function setChatStatus(text, retryCount){
+  const el=document.getElementById('chatStatus');
+  if(!el)return;
+  if(text.includes('思考')||text.includes('尝试')){
+    if(!statusStartTime)statusStartTime=Date.now();
+    const sec=Math.floor((Date.now()-statusStartTime)/1000);
+    const retry = (retryCount||0) > 0 ? ` (第${retryCount+1}/3次尝试)` : '';
+    el.textContent=text+retry+' ('+sec+'s)';
+    el.style.color='var(--accent-dim)';
+  }else{
+    statusStartTime=0;
+    el.textContent=text;
+    el.style.color=text.includes('等待')?'var(--accent)':'var(--text-muted)'
+  }
+}
+// Update elapsed time every 3s while AI is thinking
+setInterval(()=>{const el=document.getElementById('chatStatus');if(el&&statusStartTime>0){const sec=Math.floor((Date.now()-statusStartTime)/1000);const retry = lastRetryCount>0 ? ` (第${lastRetryCount+1}/3次尝试)` : '';el.textContent=el.textContent.replace(/^(.+?)(?:\(\d+s\)|$)/,'$1'+retry+' ('+sec+'s)')}},3000);
+
+function updateChatInputState(){
+  const inp = document.getElementById('chatInput');
+  const btn = document.querySelector('.chat-input-row button');
+  if(!inp) return;
+  inp.placeholder = hasInterrupt ? '输入你的想法或反馈，然后点击横幅中的按钮提交...' : '输入指令或反馈...';
+  if(btn) btn.disabled = false;
+}
+
+function timeAgo(iso){try{const t=new Date(iso);const s=(Date.now()-t)/1000;if(s<60)return'刚刚';if(s<3600)return Math.floor(s/60)+'分钟前';if(s<86400)return Math.floor(s/3600)+'小时前';return Math.floor(s/86400)+'天前'}catch(e){return''}}
+
+// State
+const AGENT_PANEL_MAP={'角色Agent':'characters','世界观Agent':'world','章纲Agent':'outline','全书审查Agent':'review'};
+async function refreshState(){if(!sessionId){if(window.__stateData){stateData=window.__stateData;renderAllPanels();updateTags();updateSteps()}return}try{const r=await fetch('/api/status/'+sessionId);if(!r.ok){if(r.status===404){sessionId=null;localStorage.removeItem('ws_session');showSetup()}return}const d=await r.json();stateData=d.state||{};if(d.context)stateData.context=d.context;if(d.retry_count!==undefined&&d.retry_count!==lastRetryCount){lastRetryCount=d.retry_count;if(lastRetryCount>0)setChatStatus('⏳ AI 生成中',lastRetryCount)}else if(lastRetryCount>0&&(!d.retry_count||d.retry_count===0)){lastRetryCount=0}if(d.agent_error&&sessionStorage.getItem('last_agent_error')!==d.agent_error){sessionStorage.setItem('last_agent_error',d.agent_error);var panelName=AGENT_PANEL_MAP[d.agent_name]||'story';var panelLabel={'characters':'角色管理','world':'世界观','story':'故事大纲','outline':'章纲','editor':'写作编辑器','review':'全书审查'}[panelName]||panelName;addChat('system','❌ AI 暂时不可用，请手动填写「'+panelLabel+'」面板');selectPanel(panelName)}if(d.done||(d.interrupt&&d.interrupt.length===0&&!d.error)){if(hasInterrupt){hasInterrupt=false;updateChatInputState()}}else if(d.interrupt&&d.interrupt.length>0&&!hasInterrupt){hasInterrupt=true;updateChatInputState()}
+renderAllPanels();updateTags();updateSteps()}catch(e){}}
+
+// Panel rendering
+function renderAllPanels(){
+  if(!stateData)return;
+  renderStory();renderCharacters();renderWorld();renderOutline();renderEditor();renderContext();renderFactLedger();renderForeshadowPanel();renderStateTablePanel();renderTimeline();renderStyle();renderReferences();renderUsage();renderReview();renderRules()
+}
+function selectPanel(name){currentPanel=name;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.panel===name));renderAllPanels()}
+document.querySelectorAll('.nav-item').forEach(e=>e.addEventListener('click',()=>selectPanel(e.dataset.panel)));
+
+function renderStory(){
+  if(currentPanel!=='story')return;
+  // 保存滚动位置
+  const body=document.querySelector('.panel-body');const st=body?body.scrollTop:0;
+  let h='<div class="panel-header"><h2>故事大纲</h2><div class="actions"><button class="btn primary" id="storySaveBtn" onclick="saveStoryEdits()">保存修改</button><button class="btn" onclick="addChat(\'system\',\'在对话区输入修改意见，AI 会帮你优化故事大纲。\')">使用说明</button></div></div><div class="panel-body" id="storyBody">';
+  const s=stateData?.story||{};
+  const edits=panelContent?.story||{};
+  h+=makeField('一句话核心','one_sentence',edits.one_sentence!==undefined?edits.one_sentence:s.one_sentence||'','story');
+  h+=makeField('类型标签','tag',edits.tag!==undefined?edits.tag:s.tag||'','story');
+  if(s.five_sentences){s.five_sentences.forEach((v,i)=>h+=makeField('第'+(i+1)+'句','sentence_'+i,edits['sentence_'+i]!==undefined?edits['sentence_'+i]:v,'story'))}
+  h+='</div>';document.getElementById('centerPanel').innerHTML=h;
+  // 恢复滚动位置
+  requestAnimationFrame(()=>{const b=document.getElementById('storyBody');if(b)b.scrollTop=st})}
+function makeField(label,key,value,panel){
+  return '<div class="story-field"><label>'+label+'</label><textarea data-panel="'+(panel||'story')+'" data-key="'+key+'" data-original="'+esc(value)+'" onchange="autoSaveField(this)">'+esc(value)+'</textarea></div>'
+}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function autoSaveField(el){
+  const key=el.dataset.key,val=el.value;
+  if(!panelContent.story)panelContent.story={};
+  panelContent.story[key]=val;
+  el.style.borderColor='var(--accent-dim)';
+  setTimeout(()=>{el.style.borderColor='transparent'},1500)
+}
+async function saveStoryEdits(){
+  const data=panelContent.story||{};if(Object.keys(data).length===0){addChat('system','没有需要保存的修改。');return}
+  await savePanel('story',data);panelContent.story={}
+}
+
+function renderCharacters(){
+  if(currentPanel!=='characters')return;const cs=stateData?.characters;let h='<div class="panel-header"><h2>角色管理</h2><div class="actions"><button class="btn primary" onclick="addCharacter()">新增角色</button></div></div><div class="panel-body">';
+  if(cs&&cs.list){cs.list.forEach((c,i)=>{h+='<div class="char-card"><div class="card-actions"><button class="btn btn-sm" onclick="editCharacter('+i+')">编辑</button><button class="btn btn-sm danger" onclick="deleteCharacter('+i+')">删除</button></div><h3>'+esc(c.name)+'</h3><span class="role-tag">'+esc(c.role)+'</span><div class="field"><strong>性格：</strong>'+esc(c.personality)+'</div><div class="field"><strong>目标：</strong>'+esc(c.goal)+'</div>'+(c.arc?'<div class="field"><strong>弧线：</strong>'+esc(c.arc)+'</div>':'')+'</div>'})}
+  else{h+='<p style="color:var(--text-muted)">暂无角色数据，等待 AI 生成。</p>'}
+  h+='</div>';document.getElementById('centerPanel').innerHTML=h
+}
+
+function addCharacter(){var n=prompt('角色名：','');if(!n||!n.trim()){addChat('system','⚠️ 角色名不能为空');return}var r=prompt('定位（主角/女主/反派/配角）：','配角');savePanel('characters',{_action:'add',character:{name:n.trim(),role:r||'配角'}})}
+function editCharacter(i){try{var c=stateData.characters.list[i];var n=prompt('角色名：',c.name);if(!n||!n.trim()){addChat('system','⚠️ 角色名不能为空');return}var r=prompt('定位：',c.role);var p=prompt('性格：',c.personality);var g=prompt('目标：',c.goal);savePanel('characters',{_action:'update',_index:i,character:{name:n.trim(),role:r||c.role,personality:p||c.personality,goal:g||c.goal}})}catch(e){addChat('system','❌ 编辑失败: '+e.message)}}
+function deleteCharacter(i){if(confirm('确定删除这个角色？'))savePanel('characters',{_action:'delete',_index:i})}
+
+function renderWorld(){
+  if(currentPanel!=='world')return;const w=stateData?.world||{};let h='<div class="panel-header"><h2>世界观</h2><div class="actions"><button class="btn primary" onclick="saveWorld()">保存修改</button><button class="btn" onclick="resume(\'confirm\')">AI 协助</button></div></div><div class="panel-body">';
+  h+='<div class="world-section"><h3>力量体系</h3>';
+  h+='<div class="world-field"><label>体系名称</label><input id="wv-system" value="'+esc(w.system||'')+'"></div>';
+  h+='<div class="world-field"><label>等级（用顿号分隔）</label><input id="wv-tiers" value="'+esc((w.tiers||[]).join('、'))+'"></div>';
+  h+='<div class="world-field"><label>修炼规则</label><input id="wv-rules" value="'+esc(w.cultivation_rules||'')+'"></div>';
+  if(w.geography){const g=w.geography;
+    h+='<div class="world-section"><h3>地理</h3>';
+    h+='<div class="world-field"><label>世界地图描述</label><textarea id="wv-map" rows="2" style="width:100%;padding:6px 10px;border:1px solid transparent;border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:12px;outline:none;resize:vertical">'+esc(g.world_map||'')+'</textarea></div>';
+    if(g.major_locations&&g.major_locations.length>0){h+='<div class="world-field"><label>主要地点</label>';g.major_locations.forEach((loc,i)=>{h+='<div style="display:flex;gap:4px;margin:2px 0"><input value="'+esc(loc.name||loc.location||'')+'" style="flex:1;padding:4px 8px;border:1px solid transparent;border-radius:4px;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);font-size:11px" readonly><span style="color:var(--text-muted);font-size:11px;line-height:28px">'+esc((loc.description||'').slice(0,60))+'</span></div>'});h+='</div>'}
+    h+='</div>'}
+  if(w.society){const s=w.society;
+    h+='<div class="world-section"><h3>社会势力</h3>';
+    if(s.factions&&s.factions.length>0){s.factions.forEach((f,i)=>{h+='<div style="display:flex;gap:4px;margin:2px 0"><input value="'+esc(f.name||'')+'" style="flex:1;padding:4px 8px;border:1px solid transparent;border-radius:4px;background:var(--bg-deep);color:var(--text-primary);font-family:var(--font-sans);font-size:11px" readonly><span style="color:var(--text-muted);font-size:11px;line-height:28px">'+esc(f.description||'').slice(0,60)+'</span></div>'});}
+    h+='</div>'}
+  h+='</div>';document.getElementById('centerPanel').innerHTML=h
+}
+function saveWorld(){const data={};const s=document.getElementById('wv-system');if(s)data.system=s.value;const t=document.getElementById('wv-tiers');if(t)data.tiers=t.value;const r=document.getElementById('wv-rules');if(r)data.cultivation_rules=r.value;savePanel('world',data)}
+
+function renderOutline(){
+  if(currentPanel!=='outline')return;const o=stateData?.outline;let h='<div class="panel-header"><h2>章纲视图</h2><button class="btn primary" onclick="resume(\'confirm\')">AI 重新生成</button></div><div class="panel-body">';
+  if(o&&o.total){h+='<div class="chapter-grid">';
+  const chList = o.chapters || [];
+  for(let i=1;i<=o.total;i++){
+    const chData = chList.find(c=>c.number===i);
+    const title = (chData&&chData.title)||'第'+i+'章';
+    const event = (chData&&chData.core_event)||'';
+    const written=o.written&&o.written.includes(i);
+    h+='<div class="chapter-card" onclick="enterEditor('+i+')"><div class="ch-num">第'+i+'章</div><div class="ch-title">'+esc(title)+'</div>'+(event?'<div class="ch-event">'+esc(event.slice(0,40))+'</div>':'')+'<div class="ch-status"><span class="'+(written?'done':'todo')+'">'+(written?'已完成':'点击编辑')+'</span></div></div>'}
+  h+='</div>'}else{h+='<p style="color:var(--text-muted)">等待章纲生成。</p>'}
+  h+='</div>';document.getElementById('centerPanel').innerHTML=h
+}
+
+function enterEditor(ch){selectPanel('editor');sessionStorage.setItem('ws_editor_ch',ch);renderEditor()}
+
+function renderEditor(){
+  if(currentPanel!=='editor')return;
+  const ch=parseInt(sessionStorage.getItem('ws_editor_ch')||'1');
+  const o=stateData?.outline;
+  let h='<div class="editor-container"><div class="panel-header"><h2>写作编辑器 — 第'+ch+'章</h2><select onchange="enterEditor(parseInt(this.value))" style="margin-left:12px;padding:4px 8px;background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-family:var(--font-sans);font-size:12px">';
+  if(o&&o.total){const chList = o.chapters || [];for(let i=1;i<=o.total;i++){const cd=chList.find(c=>c.number===i);const t=(cd&&cd.title)||'第'+i+'章';h+='<option value="'+i+'"'+(i===ch?' selected':'')+'>'+esc(t)+'</option>'}}
+  h+='</select></div><div class="editor-tabs">';
+  h+='<span class="editor-tab active" onclick="switchEditorTab(this,\'outline\')">章纲参考</span>';
+  h+='<span class="editor-tab" onclick="switchEditorTab(this,\'characters\')">角色卡片</span>';
+  h+='<span class="editor-tab" onclick="switchEditorTab(this,\'world\')">世界观</span>';
+  h+='<span class="editor-tab" onclick="switchEditorTab(this,\'story\')">故事大纲</span>';
+  h+='</div><div class="editor-ref" id="editorRef"><div class="ref-item"><span class="ref-label">第'+ch+'章</span>';
+  const curCh = (o&&o.chapters) ? o.chapters.find(c=>c.number===ch) : null;
+  if(curCh&&curCh.core_event)h+='<br><span style="color:var(--text-secondary);font-size:12px">核心事件：'+esc(curCh.core_event.slice(0,100))+'</span>';
+  h+='</div></div>';
+  h+='<div class="editor-body"><textarea id="editorContent" placeholder="在此写作或粘贴 AI 生成的内容...">';
+  // Auto-fill: priority: saved draft > API content > empty
+  const apiContent = stateData?.drafts?.[String(ch)]?.content || '';
+  const savedContent = sessionStorage.getItem('ws_draft_'+ch) || '';
+  const fillContent = savedContent || apiContent;
+  h+=esc(fillContent)+'</textarea></div>';
+  h+='<div class="editor-footer"><span>字数：<span id="wcDisplay">0</span></span><div class="btns"><button class="btn" onclick="saveDraft()">保存草稿</button><button class="btn primary" onclick="triggerStep(\'writer\')">AI 写初稿</button><button class="btn" onclick="triggerStep(\'editor\')" style="color:var(--accent-dim)">AI 润色</button><button class="btn" onclick="triggerStep(\'proofread\')" style="color:var(--success)">AI 校对</button></div></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  const ta=document.getElementById('editorContent');
+  if(ta){ta.addEventListener('input',()=>document.getElementById('wcDisplay').textContent=ta.value.length);document.getElementById('wcDisplay').textContent=ta.value.length}
+}
+function switchEditorTab(el,tab){document.querySelectorAll('.editor-tab').forEach(e=>e.classList.remove('active'));el.classList.add('active');const ref=document.getElementById('editorRef');
+  if(tab==='outline'){const o=stateData?.outline;if(o&&o.chapters){const ch=parseInt(sessionStorage.getItem('ws_editor_ch')||'1');const cur=o.chapters.find(c=>c.number===ch);let r='<div class="ref-item"><span class="ref-label">章纲参考</span><br>共'+o.total+'章</div>';if(cur){r+='<div class="ref-item"><strong>'+esc(cur.title)+'</strong></div>';if(cur.core_event)r+='<div class="ref-item"><span class="ref-label">核心事件：</span>'+esc(cur.core_event)+'</div>'}ref.innerHTML=r}else{ref.innerHTML='等待章纲生成'}}
+  else if(tab==='characters'){const cs=stateData?.characters;if(cs&&cs.list){let r='';cs.list.forEach(c=>r+='<div class="ref-item"><strong>'+esc(c.name)+'</strong> ('+esc(c.role)+') - '+esc(c.personality)+' | 目标：'+esc(c.goal)+'</div>');ref.innerHTML=r}else ref.innerHTML='等待角色生成'}
+  else if(tab==='world'){const w=stateData?.world||{};ref.innerHTML=w.system?'<div class="ref-item">力量体系：<strong>'+esc(w.system)+'</strong><br>等级：'+(w.tiers||[]).join(' → ')+'</div>':'等待世界观生成'}
+  else if(tab==='story'){const s=stateData?.story||{};ref.innerHTML=s.one_sentence?'<div class="ref-item"><strong>'+esc(s.one_sentence)+'</strong></div>':'等待故事生成'}
+}
+
+async function saveDraft(){
+  const content=document.getElementById('editorContent')?.value;
+  const ch=parseInt(sessionStorage.getItem('ws_editor_ch')||'1');
+  if(!content||!sessionId)return;
+  sessionStorage.setItem('ws_draft_'+ch,content);
+  try{
+    const r=await fetch('/api/panel/'+sessionId+'/editor',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({chapter_number:ch,content:content})});
+    const d=await r.json();
+    addChat('system',d.ok?'草稿已保存到服务器。':'保存失败');
+  }catch(e){addChat('system','保存错误: '+e.message)}
+}
+
+async function triggerStep(target){
+  if(!sessionId)return;
+  const content=document.getElementById('editorContent')?.value||'';
+  const ch=parseInt(sessionStorage.getItem('ws_editor_ch')||'1');
+  sessionStorage.setItem('ws_draft_'+ch,content);
+  // Save content and set target stage, then advance graph
+  try{
+    await fetch('/api/panel/'+sessionId+'/editor',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({chapter_number:ch,content:content,trigger:target})});
+  }catch(e){}
+  addChat('system','正在处理，请稍候...');
+  await resume('y');
+}
+
+function selectTopicCard(i){
+  document.querySelectorAll('[id^="topicCard"]').forEach(c=>c.style.borderColor='var(--border)');
+  const el=document.getElementById('topicCard'+i);if(el)el.style.borderColor='var(--accent)';
+  // 更新选中状态
+  if(stateData?.topic?.suggestions){
+    stateData.topic.selected = i;
+    const selected = stateData.topic.suggestions[i];
+    if(v2Mode){
+      // V2: 直接发送选中的选题标题作为 feedback
+      const topicTitle = selected ? selected.title : String(i);
+      resumeV2('y', '选题: ' + topicTitle);
+    } else {
+      resume('select_topic',String(i));
+    }
+  }
+}
+
+// ── 选题编辑 ──
+function editTopicCard(i){
+  if(!stateData?.topic?.suggestions) return;
+  const s = stateData.topic.suggestions[i];
+  const card = document.getElementById('topicCard'+i);
+  if(!card) return;
+  card.innerHTML =
+    '<div style="padding:4px 0">'+
+    '<label style="font-size:11px;color:var(--text-muted)">标题</label>'+
+    '<input id="topicEditTitle'+i+'" value="'+esc(s.title)+'" style="width:100%;padding:4px 8px;margin:2px 0 6px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:13px">'+
+    '<label style="font-size:11px;color:var(--text-muted)">类型/子类型</label>'+
+    '<div style="display:flex;gap:6px;margin:2px 0 6px">'+
+    '<input id="topicEditGenre'+i+'" value="'+esc(s.genre)+'" placeholder="类型" style="flex:1;padding:4px 8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px">'+
+    '<input id="topicEditSub'+i+'" value="'+esc(s.sub_genre)+'" placeholder="子类型" style="flex:1;padding:4px 8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px">'+
+    '</div>'+
+    '<label style="font-size:11px;color:var(--text-muted)">核心卖点</label>'+
+    '<textarea id="topicEditSell'+i+'" rows="2" style="width:100%;padding:4px 8px;margin:2px 0 6px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px;resize:vertical">'+esc(s.core_selling_point||'')+'</textarea>'+
+    '<label style="font-size:11px;color:var(--text-muted)">热度/难度</label>'+
+    '<div style="display:flex;gap:6px;margin:2px 0 6px">'+
+    '<input id="topicEditHeat'+i+'" value="'+esc(s.heat_level||'')+'" placeholder="热度" style="flex:1;padding:4px 8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px">'+
+    '<input id="topicEditDiff'+i+'" value="'+esc(s.difficulty||'')+'" placeholder="难度" style="flex:1;padding:4px 8px;background:var(--bg-surface);border:1px solid var(--border);border-radius:4px;color:var(--text-primary);font-size:12px">'+
+    '</div>'+
+    '<div style="margin-top:8px;display:flex;gap:6px">'+
+    '<button onclick="event.stopPropagation();saveTopicEdit('+i+')" style="padding:4px 12px;background:var(--accent);color:var(--bg-deep);border:none;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600">保存</button>'+
+    '<button onclick="event.stopPropagation();cancelTopicEdit('+i+')" style="padding:4px 12px;background:var(--bg-surface);color:var(--text-secondary);border:1px solid var(--border);border-radius:4px;cursor:pointer;font-size:12px">取消</button>'+
+    '</div></div>';
+}
+
+function saveTopicEdit(i){
+  if(!stateData?.topic?.suggestions) return;
+  const s = stateData.topic.suggestions[i];
+  const getVal = function(id, fallback){
+    const el = document.getElementById(id);
+    return el ? el.value : fallback;
+  };
+  s.title = getVal('topicEditTitle'+i, s.title);
+  s.genre = getVal('topicEditGenre'+i, s.genre);
+  s.sub_genre = getVal('topicEditSub'+i, s.sub_genre);
+  s.core_selling_point = getVal('topicEditSell'+i, s.core_selling_point);
+  s.heat_level = getVal('topicEditHeat'+i, s.heat_level);
+  s.difficulty = getVal('topicEditDiff'+i, s.difficulty);
+  // Re-render the card with updated values
+  renderTopicCard(i, s);
+}
+
+function cancelTopicEdit(i){
+  if(!stateData?.topic?.suggestions) return;
+  renderTopicCard(i, stateData.topic.suggestions[i]);
+}
+
+function renderTopicCard(i, s){
+  const card = document.getElementById('topicCard'+i);
+  if(!card) return;
+  const selected = stateData.topic.selected === i;
+  card.style.borderColor = selected ? 'var(--accent)' : 'var(--border)';
+  card.innerHTML =
+    '<span onclick="event.stopPropagation();editTopicCard('+i+')" title="编辑选题" style="position:absolute;top:6px;right:8px;cursor:pointer;font-size:12px;color:var(--text-muted);opacity:0.6" onmouseover="this.style.opacity=\'1\'" onmouseout="this.style.opacity=\'0.6\'">✎</span>'+
+    '<div onclick="selectTopicCard('+i+')" style="cursor:pointer">'+
+    '<strong style="color:var(--accent)">'+esc(s.title)+'</strong> '+
+    '<span style="color:var(--text-muted)">'+esc(s.genre)+'/'+esc(s.sub_genre)+'</span><br>'+
+    '<span style="font-size:12px;color:var(--text-secondary)">'+esc(s.core_selling_point||'').slice(0,80)+'</span><br>'+
+    '<span style="font-size:11px;color:var(--text-muted)">热度：'+esc(s.heat_level||'')+' | 难度：'+esc(s.difficulty||'')+'</span>'+
+    '</div>';
+}
+
+function updateTags(){const s=stateData||{};
+  setTag('story',s.story&&s.story.confirmed);setTag('characters',s.characters&&s.characters.confirmed);
+  setTag('world',s.world&&s.world.confirmed);setTag('outline',s.outline&&s.outline.confirmed);
+  setTag('editor',s.drafts&&Object.keys(s.drafts).length>0);
+}
+function setTag(id,done){const el=document.getElementById('tag-'+id);if(!el)return;el.textContent=done?'✓':'';el.className='tag '+(done?'done':'')}
+
+function updateSteps(){const s=stateData||{};const dots=document.getElementById('progressDots');let h='';
+  const steps=[{k:'topic',l:'选题'},{k:'story',l:'一句话'},{k:'story5',l:'五句话'},{k:'characters',l:'角色'},{k:'world',l:'世界观'},{k:'outline',l:'章纲'},{k:'writing',l:'写作'},{k:'review',l:'审查'}];
+  let active=0;
+  if(s.topic&&s.topic.selected>=0)active=1;if(s.story&&s.story.one_sentence)active=2;if(s.story&&s.story.five_sentences)active=3;
+  if(s.characters&&s.characters.confirmed)active=4;if(s.world&&s.world.confirmed)active=5;
+  if(s.outline&&s.outline.confirmed)active=6;if(s.drafts&&Object.keys(s.drafts).length>0)active=7;
+  steps.forEach((st,i)=>{const cls=i<active?'done':(i===active?'active':'');h+='<span class="progress-dot '+cls+'" title="'+st.l+'"></span>'})
+  dots.innerHTML=h
+}
+
+function renderContext(){
+  if(currentPanel!=='context')return;
+  let h='<div class="panel-header"><h2>写作上下文</h2><div class="actions"><span class="btn-sm" id="ctx-updated" style="color:var(--text-muted);font-size:11px"></span><span class="btn-sm" onclick="alert(\'角色状态和前章摘要由AI自动提取并注入写作上下文。手动修正的优先级高于AI更新。\')" style="cursor:help">ⓘ 自动提取说明</span></div></div>';
+  h+='<div class="panel-body" id="ctx-body">';
+  h+='<div id="ctx-empty" style="text-align:center;padding:60px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📋</div><div>写作上下文将在策划完成后自动建立</div><div style="font-size:12px;margin-top:8px">当前阶段：策划中<br>上下文将在角色/世界/章纲确认后逐步填充</div></div>';
+  h+='<div id="ctx-content" style="display:none"></div>';
+  h+='<div id="ctx-loading" style="display:none"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div><div class="ctx-skeleton" style="height:100px"></div></div>';
+  h+='<div id="ctx-error" style="display:none;text-align:center;padding:40px;color:var(--danger)"><div style="font-size:24px;margin-bottom:8px">⚠</div><div id="ctx-error-msg">上下文加载失败</div><button onclick="refreshState()" style="margin-top:12px;padding:6px 16px;background:var(--accent);border:none;border-radius:6px;color:var(--bg-deep);font-weight:600;cursor:pointer">重试</button></div>';
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  // populate data if available
+  if(stateData&&stateData.context){refreshContextPanel(stateData.context)}
+  else if(!stateData||!stateData.topic||!stateData.topic.confirmed){showCtx('empty')}
+  else{showCtx('loading')}
+}
+
+function showCtx(state){
+  document.getElementById('ctx-empty').style.display=state==='empty'?'block':'none';
+  document.getElementById('ctx-loading').style.display=state==='loading'?'block':'none';
+  document.getElementById('ctx-content').style.display=state==='content'?'block':'none';
+  document.getElementById('ctx-error').style.display=state==='error'?'block':'none';
+}
+
+// ── Context data refresh ──
+function refreshContextPanel(ctx){
+  if(!ctx){showCtx('empty');return}
+  showCtx('content');
+  const el=document.getElementById('ctx-content');el.innerHTML='';
+  el.classList.add('ctx-panel');
+
+  // Updated time
+  const upd=document.getElementById('ctx-updated');
+  if(ctx.updated_at){upd.textContent='Ch'+ctx.updated_chapter+'后更新 | '+timeAgo(ctx.updated_at)}else{upd.textContent=''}
+
+  // character snapshot
+  if(ctx.character_snapshot){
+    el.appendChild(ctxCard('角色状态快照',ctx.character_snapshot,true,'character_snapshot',300))
+  }
+  // recent chapters
+  if(ctx.recent_chapters_summary){
+    el.appendChild(ctxCard('前章回顾（最近3章）',ctx.recent_chapters_summary,false,null,200))
+  }
+  // world changes
+  if(ctx.world_changes){
+    el.appendChild(ctxCard('世界格局',ctx.world_changes,true,'world_changes',100))
+  }
+  // foreshadows
+  if(ctx.unresolved_foreshadows||ctx.resolved_foreshadows){
+    el.appendChild(renderForeshadows(ctx))
+  }
+  // consistency notes
+  if(ctx.world_consistency_notes){
+    el.appendChild(ctxCard('⚠ 一致性提醒',ctx.world_consistency_notes,true,'world_consistency_notes',100))
+  }
+  // progress
+  if(ctx.plot_progress){
+    el.appendChild(renderProgress(ctx.plot_progress,ctx.story_beats_remaining,ctx.chapter_word_counts))
+  }
+  // pacing
+  if(ctx.pacing_state){
+    el.appendChild(ctxCard('节奏状态',ctx.pacing_state,false,null,80))
+  }
+}
+
+// ── Card builder ──
+function ctxCard(title,content,editable,fieldName,maxLen){
+  const div=document.createElement('div');div.className='ctx-card fade-in';
+  div.innerHTML='<h3>'+esc(title)+'</h3><div class="ctx-body" id="ctx-'+fieldName+'-body">'+esc(content)+'</div>';
+  if(editable&&fieldName){
+    div.innerHTML+='<div class="ctx-footer"><button onclick="startCtxEdit(\''+fieldName+'\','+maxLen+')">✎ 手动修正</button></div>';
+    div.innerHTML+='<div id="ctx-conflict-'+fieldName+'" style="display:none" class="ctx-conflict-banner">⚠ AI 已更新此字段。你的修改仍在编辑区 <button onclick="ctxDismissConflict(\''+fieldName+'\')">查看AI更新</button><button onclick="ctxAbandonEdit(\''+fieldName+'\')">放弃我的修改</button></div>';
+  }
+  return div
+}
+
+// ── Inline edit ──
+window._ctxEditing=null;window._ctxOriginal={};
+function startCtxEdit(fieldName,maxLen){
+  const body=document.getElementById('ctx-'+fieldName+'-body');
+  if(!body)return;
+  window._ctxOriginal[fieldName]=body.textContent;
+  const val=body.textContent;
+  body.innerHTML='<textarea class="ctx-edit" id="ctx-edit-'+fieldName+'" maxlength="'+maxLen+'">'+esc(val)+'</textarea>';
+  body.innerHTML+='<span class="char-count" id="ctx-count-'+fieldName+'">'+val.length+'/'+maxLen+'</span>';
+  body.innerHTML+='<div class="ctx-footer"><button class="save" onclick="saveCtxEdit(\''+fieldName+'\','+maxLen+')">保存</button><button onclick="cancelCtxEdit(\''+fieldName+'\')">取消</button></div>';
+  window._ctxEditing=fieldName;
+  const ta=document.getElementById('ctx-edit-'+fieldName);
+  ta.focus();
+  ta.addEventListener('input',function(){document.getElementById('ctx-count-'+fieldName).textContent=this.value.length+'/'+maxLen})
+}
+async function saveCtxEdit(fieldName,maxLen){
+  const ta=document.getElementById('ctx-edit-'+fieldName);if(!ta)return;
+  let val=ta.value;if(val.length>maxLen)val=val.slice(0,maxLen);
+  if(!sessionId)return;
+  try{
+    const body={};body[fieldName]=val;
+    const r=await fetch('/api/panel/'+sessionId+'/context',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json();
+    if(d.ok){addChat('system','上下文已保存');window._ctxEditing=null;await refreshState()}
+    else{addChat('system','保存失败: '+d.error)}
+  }catch(e){addChat('system','保存错误: '+e.message)}
+}
+function cancelCtxEdit(fieldName){window._ctxEditing=null;refreshState()}
+function ctxDismissConflict(fieldName){document.getElementById('ctx-conflict-'+fieldName).style.display='none';refreshState()}
+function ctxAbandonEdit(fieldName){cancelCtxEdit(fieldName)}
+
+// ── Foreshadow list ──
+function renderForeshadows(ctx){
+  const div=document.createElement('div');div.className='ctx-card fade-in';
+  let h='<h3>伏笔追踪 ('+(ctx.resolved_foreshadows||[]).length+'/'+((ctx.unresolved_foreshadows||[]).length+(ctx.resolved_foreshadows||[]).length)+' 已收)</h3>';
+  h+='<ul class="ctx-foreshadow-list">';
+  (ctx.resolved_foreshadows||[]).forEach(function(f){h+='<li class="done">✅ '+esc(f)+'</li>'});
+  (ctx.unresolved_foreshadows||[]).forEach(function(f){h+='<li>⬜ '+esc(f)+'</li>'});
+  h+='</ul>';
+  h+='<div class="ctx-add-fs"><input id="ctx-new-fs" placeholder="+ 手动添加伏笔"><button onclick="addForeshadow()">添加</button></div>';
+  div.innerHTML=h;return div
+}
+async function addForeshadow(){
+  const inp=document.getElementById('ctx-new-fs');if(!inp||!inp.value.trim())return;
+  if(!sessionId)return;
+  try{
+    const r=await fetch('/api/panel/'+sessionId+'/context',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({foreshadows_add:[inp.value.trim()]})});
+    const d=await r.json();if(d.ok)await refreshState();else addChat('system','添加失败')
+  }catch(e){addChat('system','错误: '+e.message)}
+}
+
+// ── Progress ring (SVG circular) ──
+function renderProgress(progress,remaining,counts){
+  const div=document.createElement('div');div.className='ctx-card fade-in';
+  const pct=parseInt(progress)||0;
+  const r=24,circ=2*Math.PI*r,offset=circ-(pct/100)*circ;
+  let h='<h3>全书进度</h3><div class="progress-ring-wrap">';
+  h+='<div class="progress-ring"><svg viewBox="0 0 56 56">';
+  h+='<circle class="bg" cx="28" cy="28" r="'+r+'"/>';
+  h+='<circle class="fg" cx="28" cy="28" r="'+r+'" stroke-dasharray="'+circ+'" stroke-dashoffset="'+offset+'"/>';
+  h+='</svg><span class="num">'+pct+'%</span></div>';
+  h+='<div class="progress-ring-info">'+esc(progress);
+  if(remaining){h+='<br><strong>'+esc(remaining)+'</strong>'}
+  if(counts&&Object.keys(counts).length>0){
+    let c=[];Object.keys(counts).slice(-5).forEach(k=>{c.push('Ch'+k+'='+counts[k])});
+    h+='<br><span style="font-size:10px">'+c.join(' ')+'</span>';
+  }
+  h+='</div></div>';
+  div.innerHTML=h;return div
+}
+
+// ── Phase 6: Timeline Panel ──
+async function renderTimeline(){
+  if(currentPanel!=='timeline')return;
+  let h='<div class="panel-header"><h2>📅 故事年表</h2><div class="actions"><button class="btn primary" onclick="addTimelineEvent()">添加事件</button></div></div>';
+  h+='<div class="panel-body" id="tl-body"><div class="ctx-skeleton"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  try{
+    if(!v2ProjectId)return;
+    const r=await fetch('/api/timeline/'+v2ProjectId);const d=await r.json();
+    if(!d.ok)return;
+    const events=d.events||[];
+    let th='<div class="panel-header"><h2>📅 故事年表</h2><div class="actions"><button class="btn primary" onclick="addTimelineEvent()">添加事件</button></div></div>';
+    th+='<div class="panel-body"><div class="timeline-v">';
+    if(events.length===0){
+      th+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📅</div><div>暂无时间线事件</div><div style="font-size:12px;margin-top:8px">事件将在写作确认后自动从章节提取</div></div>';
+    }else{
+      for(const ev of events){
+        const colors={plot:'#d4a853',character:'#5cb85c',world:'#8b5cf6'};
+        const color=colors[ev.event_type]||'var(--text-muted)';
+        th+='<div class="tl-event" style="border-left:3px solid '+color+';padding:8px 12px;margin-bottom:10px;background:var(--bg-elevated);border-radius:0 var(--radius-sm) var(--radius-sm) 0;cursor:pointer" onclick="editTimelineEvent(\''+esc(ev.id)+'\',\''+esc(ev.description)+'\',\''+esc(ev.story_time||'')+'\','+ev.chapter_num+',\''+esc(ev.event_type)+'\')">';
+        th+='<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:13px">'+esc(ev.story_time||'Ch'+ev.chapter_num)+'</span><span style="font-size:10px;color:var(--text-muted)">Ch'+ev.chapter_num+'</span></div>';
+        th+='<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">'+esc(ev.description)+'</div>';
+        th+='<div style="margin-top:4px"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:'+color+'20;color:'+color+'">'+esc(ev.event_type)+'</span></div>';
+        th+='</div>';
+      }
+    }
+    th+='</div></div>';
+    document.getElementById('centerPanel').innerHTML=th;
+  }catch(e){document.getElementById('tl-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+async function addTimelineEvent(){
+  if(!v2ProjectId)return;
+  const desc=prompt('事件描述:');if(!desc||!desc.trim())return;
+  const st=prompt('故事内时间（如"第3天"、"盛夏"）:','')||'';
+  const ch=parseInt(prompt('章节号:','0'))||0;
+  const tp=prompt('类型 (plot/character/world):','plot')||'plot';
+  try{
+    const r=await fetch('/api/timeline/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:desc.trim(),story_time:st,chapter_num:ch,event_type:tp})});
+    const d=await r.json();if(d.ok){addChat('system','✅ 事件已添加');renderTimeline()}
+  }catch(e){addChat('system','添加失败: '+e.message)}
+}
+
+async function editTimelineEvent(id,desc,st,ch,tp){
+  const nd=prompt('描述:',desc);if(!nd||!nd.trim())return;
+  const ns=prompt('时间:',st)||st;
+  const nc=parseInt(prompt('章节:',String(ch)))||ch;
+  const nt=prompt('类型:',tp)||tp;
+  try{
+    const r=await fetch('/api/timeline/'+v2ProjectId+'/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:nd.trim(),story_time:ns,chapter_num:nc,event_type:nt})});
+    const d=await r.json();if(d.ok){addChat('system','✅ 事件已更新');renderTimeline()}
+  }catch(e){addChat('system','更新失败: '+e.message)}
+}
+
+// ── Phase 6: Style Panel ──
+async function renderStyle(){
+  if(currentPanel!=='style')return;
+  let h='<div class="panel-header"><h2>🎨 文风画像</h2><div class="actions"><button class="btn" onclick="renderStyle()">刷新</button></div></div>';
+  h+='<div class="panel-body" id="style-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  try{
+    if(!v2ProjectId)return;
+    const r=await fetch('/api/style/'+v2ProjectId);const d=await r.json();
+    if(!d.ok)return;
+    const p=d.profile||{};
+    let sh='<div class="panel-header"><h2>🎨 文风画像</h2><div class="actions"><span style="font-size:11px;color:var(--text-muted)">'+(p.chapter_count||0)+'章样本</span></div></div>';
+    sh+='<div class="panel-body">';
+    if(!p.chapter_count||p.chapter_count===0){
+      sh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">🎨</div><div>暂无文风数据</div><div style="font-size:12px;margin-top:8px">确认章节后将自动分析文风特征</div></div>';
+    }else{
+      const sl=p.sentence_lengths||{};
+      sh+='<div class="ctx-card fade-in"><h3>📏 句子长度</h3>';
+      sh+='<div style="display:flex;gap:16px"><div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--accent)">'+(sl.avg||0)+'</div><div style="font-size:11px;color:var(--text-muted)">平均</div></div>';
+      sh+='<div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--success)">'+(sl.min||0)+'</div><div style="font-size:11px;color:var(--text-muted)">最短</div></div>';
+      sh+='<div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--danger)">'+(sl.max||0)+'</div><div style="font-size:11px;color:var(--text-muted)">最长</div></div></div></div>';
+
+      // Bar charts (CSS-based)
+      sh+='<div class="ctx-card fade-in"><h3>📊 对话与描述比例</h3>';
+      const dlgPct=Math.round((p.dialogue_ratio||0)*100);
+      const descPct=Math.round((p.description_density||0)*100);
+      sh+='<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>对话占比</span><span>'+dlgPct+'%</span></div><div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+dlgPct+'%;background:var(--accent-gradient);border-radius:6px;transition:width .4s"></div></div></div>';
+      sh+='<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>描述段落占比</span><span>'+descPct+'%</span></div><div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+descPct+'%;background:linear-gradient(135deg,#5cb85c,#4a9a4a);border-radius:6px;transition:width .4s"></div></div></div>';
+
+      sh+='<div style="margin:8px 0;display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-deep);border-radius:6px"><span style="font-size:11px;color:var(--text-muted)">平均段落长度</span><span style="font-weight:600;font-size:13px">'+(p.avg_paragraph_length||0)+'字</span></div></div>';
+
+      // Word frequency
+      const wf=p.word_frequency||[];
+      if(wf.length>0){
+        sh+='<div class="ctx-card fade-in"><h3>🔤 高频词汇 Top 20</h3><div style="display:flex;flex-wrap:wrap;gap:6px">';
+        wf.slice(0,20).forEach(w=>{
+          const maxFreq=wf[0]?wf[0][1]:1;const pct=Math.max(10,Math.round((w[1]/maxFreq)*100));
+          sh+='<span style="padding:3px 8px;background:var(--bg-deep);border-radius:100px;font-size:11px;opacity:'+(0.4+pct/160)+'">'+esc(w[0])+' <span style="color:var(--text-muted)">'+w[1]+'</span></span>';
+        });
+        sh+='</div></div>';
+      }
+
+      sh+='<div style="text-align:center;color:var(--text-muted);font-size:10px;margin-top:12px">样本：'+p.chapter_count+'章 '+(p.sample_size_chars||0)+'字</div>';
+    }
+    sh+='</div>';
+    document.getElementById('centerPanel').innerHTML=sh;
+  }catch(e){document.getElementById('style-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+// ── Phase 6: References Panel ──
+async function renderReferences(){
+  if(currentPanel!=='references')return;
+  let h='<div class="panel-header"><h2>📚 参考资料</h2><div class="actions"><button class="btn primary" onclick="addReference()">添加资料</button><button class="btn" onclick="showImportDlg()">📥 导入文档</button><input id="refSearch" placeholder="搜索..." style="width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-size:11px;font-family:var(--font-sans)" oninput="renderReferences()"></div></div>';
+  h+='<div class="panel-body" id="ref-body"><div class="ctx-skeleton"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  try{
+    if(!v2ProjectId)return;
+    const q=document.getElementById('refSearch')?document.getElementById('refSearch').value:'';
+    const url='/api/references/'+v2ProjectId+(q?'?query='+encodeURIComponent(q):'');
+    const r=await fetch(url);const d=await r.json();
+    if(!d.ok)return;
+    const refs=d.references||[];
+    const types={setting:'🌍 世界观',character:'👤 角色',plot:'📖 情节',research:'🔬 研究',note:'📝 笔记'};
+    let rh='<div class="panel-header"><h2>📚 参考资料</h2><div class="actions"><button class="btn primary" onclick="addReference()">添加资料</button><button class="btn" onclick="showImportDlg()">📥 导入文档</button><input id="refSearch" value="'+esc(q)+'" placeholder="搜索..." style="width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-size:11px;font-family:var(--font-sans)" oninput="renderReferences()"></div></div>';
+    rh+='<div class="panel-body"><div id="importDropZone" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:16px;cursor:pointer;transition:all .15s" ondrop="handleImportDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'var(--border)\'">拖放文件到此处导入 (.md .txt .docx)<br><span style="font-size:11px">或点击上方「导入文档」按钮</span></div>';
+    if(refs.length===0){
+      rh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📚</div><div>暂无参考资料</div></div>';
+    }else{
+      // Tag filter buttons
+      const allTags=new Set();refs.forEach(r=>{(r.tags||[]).forEach(t=>allTags.add(t))});
+      if(allTags.size>0){
+        rh+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">';
+        Array.from(allTags).forEach(t=>rh+='<button style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:100px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:var(--font-sans)" onclick="document.getElementById(\'refSearch\').value=\''+esc(t)+'\';renderReferences()">'+esc(t)+'</button>');
+        rh+='</div>';
+      }
+      for(const ref of refs){
+        rh+='<div class="ctx-card fade-in" style="cursor:pointer" onclick="editReference(\''+esc(ref.id)+'\',\''+esc(ref.title||'')+'\',\''+esc(ref.ref_type)+'\')">';
+        rh+='<h3>'+esc(types[ref.ref_type]||'📝')+' '+esc(ref.title)+'<span class="ctx-sub">'+timeAgo(ref.created_at)+'</span></h3>';
+        rh+='<div class="ctx-body">'+esc((ref.content||'').slice(0,150))+'</div>';
+        if(ref.tags&&ref.tags.length>0){
+          rh+='<div style="margin-top:6px">';
+          ref.tags.forEach(t=>rh+='<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg-hover);color:var(--text-muted);margin-right:4px">'+esc(t)+'</span>');
+          rh+='</div>';
+        }
+        rh+='</div>';
+      }
+    }
+    rh+='</div>';
+    document.getElementById('centerPanel').innerHTML=rh;
+  }catch(e){document.getElementById('ref-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+function showImportDlg(){
+  const inp=document.createElement('input');inp.type='file';inp.accept='.md,.txt,.docx';
+  inp.onchange=async function(){
+    const file=inp.files[0];if(!file||!v2ProjectId)return;
+    addChat('system','正在导入 '+file.name+'...');
+    const fd=new FormData();fd.append('file',file);
+    try{
+      const r=await fetch('/api/import/'+v2ProjectId,{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.ok){
+        const sections=d.sections||[];
+        addChat('system','导入完成：'+sections.length+'个章节，'+d.word_count+'字。导入为参考资料？');
+        // Show import preview
+        let preview='导入预览 ('+d.file_name+'):\n';
+        sections.slice(0,5).forEach(s=>preview+='\n📄 '+s.title+': '+esc((s.content||'').slice(0,60))+'...');
+        if(sections.length>5)preview+='\n... 还有'+(sections.length-5)+'节';
+        addChat('system',preview);
+        // Auto-save first 5 sections as references
+        for(let i=0;i<Math.min(sections.length,5);i++){
+          const s=sections[i];
+          try{
+            await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,content:s.content.slice(0,2000),ref_type:s.type||'note',tags:['imported']})});
+          }catch(e){}
+        }
+        renderReferences();
+      }else{
+        addChat('system','导入失败: '+(d.error||'未知错误'));
+      }
+    }catch(e){addChat('system','导入错误: '+e.message)}
+  };
+  inp.click();
+}
+
+function handleImportDrop(e){
+  e.preventDefault();e.target.style.borderColor='var(--border)';
+  const file=e.dataTransfer.files[0];if(!file||!v2ProjectId)return;
+  addChat('system','正在导入 '+file.name+'...');
+  const fd=new FormData();fd.append('file',file);
+  fetch('/api/import/'+v2ProjectId,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
+    if(d.ok){addChat('system','导入完成：'+d.sections.length+'个章节');renderReferences()}else{addChat('system','导入失败')}
+  }).catch(e=>addChat('system','导入错误: '+e.message));
+}
+
+async function addReference(){
+  if(!v2ProjectId)return;
+  const title=prompt('资料标题:');if(!title||!title.trim())return;
+  const tp=prompt('类型 (setting/character/plot/research/note):','note')||'note';
+  const tags=prompt('标签（逗号分隔）:','')||'';
+  const content=prompt('内容（可选）:','')||'';
+  try{
+    const r=await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.trim(),ref_type:tp,tags:tags.split(',').map(t=>t.trim()).filter(Boolean),content:content})});
+    const d=await r.json();if(d.ok){addChat('system','✅ 资料已添加');renderReferences()}
+  }catch(e){addChat('system','添加失败: '+e.message)}
+}
+
+async function editReference(id,title,tp){
+  if(!v2ProjectId)return;
+  const action=prompt('操作: 1=编辑 2=删除','1');
+  if(action==='2'){
+    if(!confirm('确定删除？'))return;
+    try{await fetch('/api/references/'+v2ProjectId+'/'+id,{method:'DELETE'});renderReferences()}catch(e){}
+    return;
+  }
+  const nt=prompt('标题:',title);if(!nt||!nt.trim())return;
+  const ntp=prompt('类型:',tp)||tp;
+  try{
+    await fetch('/api/references/'+v2ProjectId+'/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:nt.trim(),ref_type:ntp})});
+    renderReferences();
+  }catch(e){addChat('system','更新失败')}
+}
+
+// ── Phase 6: Usage Panel ──
+async function renderUsage(){
+  if(currentPanel!=='usage')return;
+  let h='<div class="panel-header"><h2>📊 消耗统计</h2><div class="actions"><button class="btn" onclick="renderUsage()">刷新</button></div></div>';
+  h+='<div class="panel-body" id="usage-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  try{
+    if(!v2ProjectId)return;
+    const r=await fetch('/api/usage/'+v2ProjectId);const d=await r.json();
+    if(!d.ok)return;
+    const s=d.stats||{};
+    let uh='<div class="panel-header"><h2>📊 消耗统计</h2></div><div class="panel-body">';
+
+    // Summary cards
+    const totalTk=s.total_tokens||0;
+    uh+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
+    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">总调用次数</div><div style="font-size:28px;font-weight:700;color:var(--accent);margin:8px 0">'+(s.total_calls||0)+'</div></div>';
+    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">总 Token</div><div style="font-size:28px;font-weight:700;color:var(--accent);margin:8px 0">'+(totalTk>=1000?(totalTk/1000).toFixed(1)+'K':totalTk)+'</div></div>';
+    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">预估费用</div><div style="font-size:28px;font-weight:700;color:var(--success);margin:8px 0">$'+(s.total_cost_usd||0).toFixed(4)+'</div></div>';
+    uh+='</div>';
+
+    // Per-agent breakdown
+    const pa=s.per_agent||{};
+    if(Object.keys(pa).length>0){
+      uh+='<div class="ctx-card fade-in"><h3>Agent 消耗明细</h3>';
+      uh+='<div style="font-size:11px;color:var(--text-muted);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)"><span>Agent</span><span>调用</span><span>Token</span><span>费用</span></div>';
+      for(const [agent,adata] of Object.entries(pa)){
+        const tk=adata.tokens||0;
+        uh+='<div style="font-size:12px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-primary)">'+esc(agent)+'</span><span>'+adata.calls+'</span><span>'+(tk>=1000?(tk/1000).toFixed(1)+'K':tk)+'</span><span style="color:var(--success)">$'+(adata.cost||0).toFixed(4)+'</span></div>';
+      }
+      uh+='</div>';
+    }
+
+    // Per-model breakdown
+    const pm=s.per_model||{};
+    if(Object.keys(pm).length>0){
+      uh+='<div class="ctx-card fade-in"><h3>模型消耗明细</h3>';
+      uh+='<div style="font-size:11px;color:var(--text-muted);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)"><span>模型</span><span>调用</span><span>Token</span><span>费用</span></div>';
+      for(const [model,mdata] of Object.entries(pm)){
+        const tk=mdata.tokens||0;
+        uh+='<div style="font-size:12px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-primary)">'+esc(model)+'</span><span>'+mdata.calls+'</span><span>'+(tk>=1000?(tk/1000).toFixed(1)+'K':tk)+'</span><span style="color:var(--success)">$'+(mdata.cost||0).toFixed(4)+'</span></div>';
+      }
+      uh+='</div>';
+    }
+
+    if(Object.keys(pa).length===0&&Object.keys(pm).length===0){
+      uh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📊</div><div>暂无消耗数据</div><div style="font-size:12px;margin-top:8px">消耗统计将在 LLM 调用后自动记录</div></div>';
+    }
+
+    uh+='</div>';
+    document.getElementById('centerPanel').innerHTML=uh;
+  }catch(e){document.getElementById('usage-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+function renderFactLedger(){
+  if(currentPanel!=='factledger')return;
+  let h='<div class="panel-header"><h2>📋 事实账本</h2><div class="actions"></div></div>';
+  h+='<div class="panel-body" id="fl-body">';
+
+  const ctx = stateData?.context;
+  const facts = ctx?.facts || [];
+  const envelope = ctx?.continuity_envelope;
+
+  // 1. Continuity Envelope (handoff from previous chapter)
+  if(envelope && envelope.handoff){
+    h+='<div class="ctx-card fade-in"><h3>📡 上章衔接状态（Continuity Envelope）</h3>';
+    h+='<div class="ctx-body">'+esc(envelope.handoff||'')+'</div>';
+    if(envelope.protected){
+      h+='<div style="margin-top:8px;padding:8px;background:rgba(212,168,83,0.08);border:1px solid rgba(212,168,83,0.2);border-radius:6px;font-size:12px">';
+      h+='<strong>#PROTECTED 保护块：</strong><br>'+esc(envelope.protected||'');
+      h+='</div>';
+    }
+    if(envelope.plan_delta){
+      h+='<div style="margin-top:6px;font-size:12px;color:var(--text-muted)">📐 章纲偏差：'+esc(envelope.plan_delta||'')+'</div>';
+    }
+    h+='</div>';
+  }
+
+  // 2. Facts grouped by category
+  if(facts.length > 0){
+    h+='<div class="ctx-card fade-in"><h3>📊 事实条目（共'+facts.length+'条）</h3>';
+
+    const categories = {character:'角色', plot:'情节', world:'世界', item:'物品'};
+    for(const [cat, label] of Object.entries(categories)){
+      const catFacts = facts.filter(f => f.category === cat);
+      if(catFacts.length === 0) continue;
+
+      h+='<div class="ctx-collapse" style="margin:8px 0"><div class="ctx-collapse-title" onclick="this.parentElement.classList.toggle(\'open\')">';
+      h+='<span>'+label+' ('+catFacts.length+'条)</span>';
+      h+='<span class="ctx-collapse-arrow">▼</span></div>';
+      h+='<div class="ctx-collapse-body" style="max-height:none;padding:8px 10px">';
+
+      catFacts.forEach(f => {
+        const statusIcon = f.status === 'confirmed' ? '✅' : f.status === 'denied' ? '❌' : '⏳';
+        const statusColor = f.status === 'confirmed' ? 'var(--success)' : f.status === 'denied' ? 'var(--danger)' : 'var(--text-muted)';
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">';
+        h+='<span style="font-size:14px">'+statusIcon+'</span>';
+        h+='<span style="flex:1;color:'+statusColor+'">'+esc(f.content||'')+'</span>';
+        h+='<span style="font-size:10px;color:var(--text-muted)">Ch'+esc(f.source_chapter||'?')+'</span>';
+        if(f.valid_to_ch){
+          h+='<span style="font-size:10px;color:var(--text-muted)">→Ch'+f.valid_to_ch+'</span>';
+        }
+        // Confirm/Deny buttons for candidate facts
+        if(f.status === 'candidate'){
+          h+='<button onclick="confirmFact(\''+esc(f.id||'')+'\')" style="font-size:10px;padding:2px 6px;border:1px solid var(--success);border-radius:4px;background:transparent;color:var(--success);cursor:pointer">确认</button>';
+          h+='<button onclick="denyFact(\''+esc(f.id||'')+'\')" style="font-size:10px;padding:2px 6px;border:1px solid var(--danger);border-radius:4px;background:transparent;color:var(--danger);cursor:pointer">否认</button>';
+        }
+        h+='</div>';
+      });
+
+      h+='</div></div>';
+    }
+    h+='</div>';
+  } else {
+    h+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)">';
+    h+='<div style="font-size:40px;margin-bottom:16px">📋</div>';
+    h+='<div>暂无事实记录</div>';
+    h+='<div style="font-size:12px;margin-top:8px">事实账本将在写作确认后自动从章节中提取<br>可在左侧导航「写作上下文」面板查看已有数据</div>';
+    h+='</div>';
+  }
+
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+}
+
+async function confirmFact(factId){
+  if(!sessionId) return;
+  try{
+    const r = await fetch('/api/panel/'+sessionId+'/factledger/'+factId+'/confirm', {method:'POST'});
+    const d = await r.json();
+    if(d.ok){
+      addChat('system','事实已确认');
+      await refreshState();
+    } else {
+      addChat('system','确认失败: '+d.error);
+    }
+  } catch(e){ addChat('system','错误: '+e.message); }
+}
+
+async function denyFact(factId){
+  if(!sessionId) return;
+  try{
+    const r = await fetch('/api/panel/'+sessionId+'/factledger/'+factId+'/deny', {method:'POST'});
+    const d = await r.json();
+    if(d.ok){
+      addChat('system','事实已否认');
+      await refreshState();
+    } else {
+      addChat('system','否认失败: '+d.error);
+    }
+  } catch(e){ addChat('system','错误: '+e.message); }
+}
+
+// ── Phase 4A: Foreshadow Kanban Panel ──
+async function renderForeshadowPanel(){
+  if(currentPanel!=='foreshadow')return;
+  let h='<div class="panel-header"><h2>🔮 伏笔看板</h2><div class="actions"><button class="btn primary" onclick="addForeshadowManual()">手动添加</button><button class="btn" onclick="extractForeshadows()">AI 提取</button></div></div>';
+  h+='<div class="panel-body" id="fs-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  // Fetch data from API
+  try{
+    if(!sessionId)return;
+    const r=await fetch('/api/foreshadows/'+sessionId);const d=await r.json();
+    if(!d.ok)return;
+    const kanban=d.kanban;
+    const cols=['planned','planted','called_back','resolved'];
+    const labels={planned:'📝 计划',planted:'🌱 埋设',called_back:'🔄 呼应',resolved:'✅ 回收'};
+    const colors={planned:'#6b6560',planted:'#d4a853',called_back:'#5cb85c',resolved:'#8b5cf6'};
+    let kh='<div class="panel-header"><h2>🔮 伏笔看板</h2><div class="actions"><button class="btn primary" onclick="addForeshadowManual()">手动添加</button><button class="btn" onclick="extractForeshadows()">AI 提取</button></div></div>';
+    kh+='<div class="panel-body"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">';
+    for(const col of cols){
+      const items=kanban[col]||[];
+      kh+='<div style="background:var(--bg-elevated);border:1px solid '+colors[col]+';border-radius:var(--radius-sm);padding:10px;min-height:120px"><div style="font-size:12px;font-weight:600;color:'+colors[col]+';margin-bottom:8px">'+labels[col]+' ('+items.length+')</div>';
+      for(const fs of items){
+        const urg=fs.urgency||3;const marks={1:'○',2:'◔',3:'◑',4:'◕',5:'●'};
+        kh+='<div style="background:var(--bg-deep);border:1px solid var(--border);border-radius:6px;padding:8px;margin-bottom:6px;font-size:12px;cursor:pointer" onclick="showForeshadowDetail(\''+esc(fs.id)+'\')" title="'+esc(fs.description||'')+'">';
+        kh+='<strong>'+esc(fs.title)+'</strong> ';
+        kh+='<span style="color:'+colors[col]+'">'+marks[urg]+'</span>';
+        kh+='<div style="color:var(--text-muted);font-size:11px;margin-top:2px">'+esc((fs.description||'').slice(0,40))+'</div>';
+        if(fs.planted_chapter>0)kh+='<div style="color:var(--text-muted);font-size:10px">Ch'+fs.planted_chapter+'埋</div>';
+        kh+='</div>';
+      }
+      kh+='</div>';
+    }
+    kh+='</div></div>';
+    document.getElementById('centerPanel').innerHTML=kh;
+  }catch(e){document.getElementById('fs-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+function showForeshadowDetail(fsId){
+  if(!sessionId)return;
+  fetch('/api/foreshadows/'+sessionId).then(r=>r.json()).then(d=>{
+    if(!d.ok)return;const all=d.all||[];const fs=all.find(f=>f.id===fsId);if(!fs)return;
+    alert('伏笔: '+fs.title+'\n类型: '+fs.type+'\n状态: '+fs.status+'\n描述: '+fs.description+'\n埋设: Ch'+fs.planted_chapter+'\n紧迫度: '+fs.urgency+'/5\n截止: Ch'+(fs.deadline_chapter||'-')+'\n预期回收: '+(fs.expected_callback_range||'-'));
+  }).catch(()=>{})
+}
+
+async function addForeshadowManual(){
+  const title=prompt('伏笔标题（≤20字）:');if(!title||!title.trim())return;
+  const desc=prompt('描述（≤100字）:');if(!sessionId)return;
+  try{
+    const r=await fetch('/api/foreshadows/'+sessionId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.trim(),description:desc||'',type:'plot',status:'planned'})});
+    const d=await r.json();if(d.ok){await refreshState();selectPanel('foreshadow')}
+  }catch(e){addChat('system','添加失败: '+e.message)}
+}
+
+async function extractForeshadows(){
+  const ch=prompt('从第几章提取？','1');if(!ch||!sessionId)return;
+  try{
+    addChat('system','正在提取伏笔...');
+    const r=await fetch('/api/foreshadows/'+sessionId+'/extract?chapter_num='+parseInt(ch),{method:'POST'});
+    const d=await r.json();if(d.ok){addChat('system','提取了 '+d.extracted+' 个伏笔');await refreshState();selectPanel('foreshadow')}
+  }catch(e){addChat('system','提取失败: '+e.message)}
+}
+
+// ── Phase 4A: State Table Panel ──
+async function renderStateTablePanel(){
+  if(currentPanel!=='statetable')return;
+  let h='<div class="panel-header"><h2>📊 状态表</h2><div class="actions"><button class="btn primary" onclick="triggerStep(\'character\')">AI 生成角色</button></div></div>';
+  h+='<div class="panel-body" id="st-body"><div class="ctx-skeleton"></div></div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  try{
+    if(!sessionId)return;
+    const r=await fetch('/api/statetable/'+sessionId);const d=await r.json();
+    if(!d.ok)return;
+    const states=d.states||[];const timelines=d.timelines||{};
+    let sh='<div class="panel-header"><h2>📊 状态表</h2></div><div class="panel-body">';
+    if(states.length===0){
+      sh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📊</div><div>暂无角色状态数据</div><div style="font-size:12px;margin-top:8px">状态表将在写作确认后自动从章节中提取</div></div>';
+    }else{
+      sh+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">';
+      for(const s of states){
+        const tl=timelines[s.character_id]||[];
+        sh+='<div class="char-card" style="cursor:pointer" onclick="showCharTimeline(\''+esc(s.character_id)+'\',\''+esc(s.character_name)+'\')">';
+        sh+='<h3>'+esc(s.character_name)+'</h3>';
+        if(s.current_location)sh+='<div class="field"><strong>📍 '+esc(s.current_location)+'</strong></div>';
+        if(s.current_status)sh+='<div class="field">📌 '+esc(s.current_status)+'</div>';
+        if(s.health_state)sh+='<div class="field">❤️ '+esc(s.health_state)+'</div>';
+        if(s.held_items&&s.held_items.length>0)sh+='<div class="field">🎒 '+esc(s.held_items.slice(0,3).join(', '))+'</div>';
+        sh+='<div class="field" style="font-size:10px;color:var(--text-muted);margin-top:4px">更新于Ch'+s.last_updated_chapter+' | 历史: '+tl.length+'条</div>';
+        sh+='</div>';
+      }
+      sh+='</div>';
+    }
+    sh+='</div>';
+    document.getElementById('centerPanel').innerHTML=sh;
+  }catch(e){document.getElementById('st-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+}
+
+function showCharTimeline(charId,charName){
+  if(!sessionId)return;
+  fetch('/api/statetable/'+sessionId).then(r=>r.json()).then(d=>{
+    if(!d.ok)return;const tl=d.timelines[charId]||[];
+    let msg=charName+' 状态时间线:\n\n';
+    for(const t of tl){
+      msg+='Ch'+t.last_updated_chapter+': '+(t.current_location||'?')+' | '+(t.current_status||'-')+' | '+(t.health_state||'?')+'\n';
+    }
+    if(tl.length===0)msg+='（无历史记录）';
+    alert(msg);
+  }).catch(()=>{})
+}
+
+function renderReview(){
+  if(currentPanel!=='review')return;
+  let h='<div class="panel-header"><h2>全书审查</h2><button class="btn primary" onclick="triggerReview()">开始新的审查</button></div><div class="panel-body">';
+  // Show latest review if available
+  const r=stateData?.review;
+  if(r){
+    h+='<div class="review-report">';
+    h+='<h3>'+(r.passed?'✅ 审查通过':'⚠️ 需修改')+'</h3>';
+    h+='<p><strong>节奏评估：</strong>'+esc(r.pacing||'')+'</p>';
+    if(r.issues&&r.issues.length>0){h+='<p><strong>结构问题：</strong></p><ul>';r.issues.forEach(i=>h+='<li>'+esc(i)+'</li>');h+='</ul>'}
+    if(r.recommendations&&r.recommendations.length>0){h+='<p><strong>建议：</strong></p><ul>';r.recommendations.forEach(i=>h+='<li>'+esc(i)+'</li>');h+='</ul>'}
+    h+='</div>';
+  }else{
+    h+='<p style="color:var(--text-muted)">暂无审查记录。点击上方按钮运行全书审查。</p>';
+  }
+  h+='</div>';document.getElementById('centerPanel').innerHTML=h
+}
+
+async function triggerReview(){addChat('system','正在运行全书审查...');await resume('y')}
+
+// v0.4.0 辅助检查面板缓存
+let auxChecksCache = {};
+function renderAuxChecks(chNum, checks){
+  auxChecksCache[chNum] = checks;
+  if(currentPanel !== 'context') return;
+  // 在上下文面板底部插入辅助检查卡片
+  const body = document.getElementById('centerPanel');
+  if(!body) return;
+  let html = '<div class="ctx-card" style="margin-top:16px"><h3>辅助检查清单 <span class="ctx-sub">第'+chNum+'章</span></h3>';
+  checks.forEach(c => {
+    const icon = c.status === 'pass' ? '✅' : '⚠️';
+    const color = c.status === 'pass' ? 'var(--success)' : 'var(--accent)';
+    html += '<div style="display:flex;align-items:center;gap:6px;padding:3px 0;font-size:12px;color:var(--text-secondary)">'
+      + '<span style="color:'+color+'">'+icon+'</span> '
+      + '<strong>'+esc(c.name)+'</strong>'
+      + (c.detail ? ' <span style="color:var(--text-muted)">'+esc(c.detail)+'</span>' : '')
+      + '</div>';
+  });
+  html += '</div>';
+  const existing = body.querySelector('.aux-checks-card');
+  if(existing) existing.remove();
+  body.insertAdjacentHTML('beforeend', html);
+  body.lastElementChild.classList.add('aux-checks-card');
+}
+
+async function savePanel(panel,data){
+  if(!sessionId){addChat('system','❌ 保存失败：未连接到服务器，请刷新页面重试');return}
+  try{
+    const r=await fetch('/api/panel/'+sessionId+'/'+panel,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const d=await r.json();
+    if(d.ok){addChat('system','✅ 已保存');await refreshState()}
+    else{addChat('system','❌ 保存失败: '+(d.error||'未知错误'))}
+  }catch(e){addChat('system','❌ 保存错误: '+e.message)}
+}
+
+// Export
+async function exportNovel(fmt){if(!sessionId)return;const r=await fetch('/api/export/'+sessionId+'?fmt='+fmt);const d=await r.json();if(d.content)addChat('system','已导出 ('+d.fmt+', '+(d.content.length||0)+' 字符)')}
+
+// Project grid (Xiaohongshu-style)
+function stageLabel(stage){
+  var m={'TOPIC':'选题','STORY':'策划','CHARACTERS':'角色','WORLD':'世界观','OUTLINE':'章纲','WRITING':'写作','REVIEW':'审查','DRAFT':'写作','EDITING':'编辑','COMPLETE':'完成'};
+  return m[stage]||stage||''
+}
+function fmtCount(n){
+  if(!n)return'0';if(n<1000)return String(n);return(n/10000).toFixed(1)+'w'
+}
+async function loadProjects(){
+  try{
+    const r=await fetch('/api/projects');if(!r.ok)return;
+    const d=await r.json();
+    var grid=document.getElementById('projectGrid');
+    var list=document.getElementById('projectGridList');
+    document.getElementById('workbench').style.display='none';
+    document.getElementById('loadingOverlay').style.display='none';
+    if(!d.projects||d.projects.length===0){
+      grid.style.display='none';
+      document.getElementById('setupOverlay').style.display='flex';
+      return
+    }
+    grid.style.display='block';
+    document.getElementById('setupOverlay').style.display='none';
+    list.innerHTML=d.projects.map(function(p){
+      var pct=p.progress_pct||0;
+      var stageCls=(pct>=100)?'done':'';
+      return '<div class="grid-card" data-pid="'+esc(p.project_id)+'">'+
+        '<div class="card-top"><div><div class="card-title">'+esc(p.name||'未命名')+'</div></div>'+
+        '<span class="card-badge '+stageCls+'">'+stageLabel(p.current_stage)+'</span></div>'+
+        (p.story_sentence?'<div class="card-story">'+esc(p.story_sentence)+'</div>':'<div class="card-story" style="color:var(--border)">等待创作...</div>')+
+        '<div class="card-stats">'+
+          '<span>📝 '+p.written_chapters+'/'+p.total_chapters+'章</span>'+
+          '<span>📄 '+fmtCount(p.word_count)+'字</span>'+
+          '<span>🕐 '+timeAgo(p.updated_at||'')+'</span>'+
+        '</div>'+
+        '<div class="card-progress"><div class="track"><div class="fill" style="width:'+pct+'%"></div></div><span class="pct">'+pct+'%</span></div>'+
+        '<div class="card-actions">'+
+          '<button class="primary" data-action="continue">继续创作</button>'+
+          '<button class="ghost" data-action="export">导出</button>'+
+          '<button class="danger" data-action="delete">删除</button>'+
+        '</div></div>';
+    }).join('');
+  }catch(e){}
+}
+// Delegated click handler for grid cards
+document.addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  var card = btn.closest('[data-pid]');
+  if (!card) return;
+  var pid = card.getAttribute('data-pid');
+  var action = btn.getAttribute('data-action');
+  if (action === 'continue') { loadProject(pid); }
+  else if (action === 'delete') { deleteProjectConfirm(pid, card.querySelector('.card-title').textContent); }
+  else if (action === 'export') {
+    showLoading('导出项目','正在生成文件...');
+    fetch('/api/export/project/'+pid+'?fmt=md').then(r=>r.json()).then(d=>{
+      hideLoading();
+      if(d.path){addChat('system','✅ 已导出到: '+d.path);alert('导出成功！\n文件位置：'+d.path)}
+      else{alert('导出失败')}
+    }).catch(function(e){hideLoading();alert('导出失败: '+e.message)});
+  }
+});
+function showNewProjectForm(){
+  document.getElementById('setupOverlay').style.display='flex';
+}
+function hideNewProjectForm(){
+  const overlay = document.getElementById('setupOverlay');
+  if (overlay) overlay.style.display = 'none';
+  const err = document.getElementById('setupError');
+  if (err) err.style.display = 'none';
+}
+
+function deleteProjectConfirm(id,name){
+  if(!confirm('确定要删除项目「'+name+'」吗？\n此操作不可撤销。'))return;
+  showLoading('删除项目','正在删除...');
+  fetch('/api/projects/'+id,{method:'DELETE'}).then(function(r){return r.json()}).then(function(d){
+    hideLoading();
+    if(d.ok){loadProjects()}else{alert('删除失败')}
+  }).catch(function(e){hideLoading();alert('删除失败: '+e.message)})
+}
+
+function showLoading(title,sub){
+  document.getElementById('loadTitle').textContent=title||'加载项目';
+  document.getElementById('loadSub').textContent=sub||'正在重建创作上下文...';
+  document.getElementById('loadingOverlay').style.display='flex';
+}
+function hideLoading(){
+  document.getElementById('loadingOverlay').style.display='none';
+}
+
+async function loadProject(projectId){
+  if(submitting)return;submitting=true;
+  showLoading('加载项目','正在启动编排引擎...');
+  try{
+    const f = new FormData(); f.append('project_id', projectId);
+    const r = await fetch('/api/v2/start', {method:'POST', body:f});
+    const d = await r.json();
+    if(d.ok){
+      hideLoading();
+      document.getElementById('projectGrid').style.display='none';
+      document.getElementById('workbench').style.display='block';
+      document.getElementById('setupError').style.display='none';
+      sessionId = projectId;
+      localStorage.setItem('ws_session', 'v2:' + projectId);
+      if(d.project_name) addChat('system','📂 已加载项目：「'+esc(d.project_name)+'」');
+      connectSSE(projectId);
+      await refreshV2State();
+      submitting = false;
+      return;
+    }
+  } catch(e) { /* fallback to V1 */ }
+
+  // V1 fallback
+  try{
+    const r=await fetch('/api/load/'+projectId,{method:'POST'});const d=await r.json();
+    if(d.error){hideLoading();document.getElementById('setupError').textContent='加载失败：'+d.error;document.getElementById('setupError').style.display='block';submitting=false;return}
+    document.getElementById('projectGrid').style.display='none';
+    document.getElementById('workbench').style.display='block';
+    document.getElementById('setupError').style.display='none';
+    hideLoading();
+    sessionId=d.session_id;if(sessionId)localStorage.setItem('ws_session',sessionId);
+    if(d.project){addChat('system','📂 已加载项目：「'+esc(d.project.name)+'」('+esc(d.project.platform)+')')}
+    hasInterrupt = false;
+    if(d.interrupt && d.interrupt.length > 0){
+      hasInterrupt = true;
+      d.interrupt.forEach(function(m){addChat('system',m)});showActions(d.interrupt);await refreshState()
+    }
+    else if(d.done){addChat('system','流程完成！')}
+    updateChatInputState();
+    await refreshState();
+  }catch(e){hideLoading();document.getElementById('setupError').textContent='网络错误：'+e.message;document.getElementById('setupError').style.display='block'}
+  submitting=false;
+}
+
+function backToGrid(){
+  sessionId=null; disconnectSSE();
+  localStorage.removeItem('ws_session');
+  document.getElementById('projectGrid').style.display='block';
+  document.getElementById('workbench').style.display='none';
+  document.getElementById('setupOverlay').style.display='none';
+  loadProjects();
+}
+
+// Init
+async function initApp(){
+  await loadProjects();
+  try{
+    const sid = localStorage.getItem('ws_session');
+    if(sid){
+      // V2 session
+      if(sid.startsWith('v2:')){
+        const pid = sid.substring(3);
+        const r = await fetch('/api/v2/status/' + pid);
+        if(r.ok){
+          const d = await r.json();
+          if(d.ok){
+            document.getElementById('projectGrid').style.display='none';
+            document.getElementById('workbench').style.display='block';
+            await loadV2Project(pid);
+            return;
+          }
+        }
+        localStorage.removeItem('ws_session');
+      } else {
+        // V1 session
+        const r = await fetch('/api/status/' + sid);
+        if(r.ok){
+          sessionId = sid;
+          document.getElementById('projectGrid').style.display='none';
+          document.getElementById('workbench').style.display='block';
+          refreshState();
+          return;
+        }
+        localStorage.removeItem('ws_session');
+      }
+    }
+  } catch(e){}
+}
+initApp();
+
+let pollingBusy = false;
+let lastRetryCount = 0;
+let pollTimer = null;
+let sseClient = null, v2ProjectId = null, v2Mode = false;
+
+function schedulePoll(){
+  if(v2Mode) return;  // V2 mode uses SSE, no polling
+  if(pollTimer) clearTimeout(pollTimer);
+  const interval = hasInterrupt ? 10000 : 2000;
+  pollTimer = setTimeout(()=>{
+    if(sessionId && !pollingBusy){
+      pollingBusy = true;
+      refreshState().finally(()=>{pollingBusy=false;schedulePoll()});
+    } else {
+      schedulePoll();
+    }
+  }, interval);
+}
+schedulePoll();
+
+// ============================================================
+// V2 SSE 事件流（替代轮询，轮询作为降级）
+// ============================================================
+
+function connectSSE(projectId){
+  console.log('[SSE] connecting to project:', projectId);
+  v2ProjectId = projectId; v2Mode = true;
+  if(pollTimer){ clearTimeout(pollTimer); pollTimer = null; }
+
+  sseClient = new EventSource('/api/v2/stream/' + projectId);
+  sseClient.onopen = () => console.log('[SSE] connection opened');
+  sseClient.onerror = (e) => console.log('[SSE] error:', e);
+
+  sseClient.addEventListener('thinking', e => {
+    console.log('[SSE] thinking', e.data);
+    setChatStatus('AI 思考中...');
+  });
+
+  sseClient.addEventListener('agent_call', e => {
+    const d = JSON.parse(e.data);
+    console.log('[SSE] agent_call', d.agent, d.instruction?.substring(0,60));
+    const agent = d.agent || '';
+    setChatStatus('调用 ' + agent + '...');
+    if(d.instruction) addChat('system', '📋 ' + d.instruction);
+    // 高亮对应面板 loading
+    const panelMap = {story:'story',character:'characters',world:'world',outline:'outline',writer:'editor',proofreader:'editor',novel_review:'review'};
+    const p = panelMap[agent];
+    if(p){ selectPanel(p); }
+  });
+
+  sseClient.addEventListener('workspace_update', e => {
+    const d = JSON.parse(e.data);
+    console.log('[SSE] workspace_update', d.summary || JSON.stringify(d).substring(0,100));
+    if(d.summary) addChat('system', '✅ ' + d.summary);
+    refreshV2State();
+  });
+
+  sseClient.addEventListener('confirm', e => {
+    const d = JSON.parse(e.data);
+    console.log('[SSE] confirm', d.agent, d.content?.stage || '', JSON.stringify(d).substring(0,200));
+    hasInterrupt = true;
+    const agent = d.agent || '';
+
+    // ★ Editable metadata → render edit panel instead of plain buttons
+    if (d.editable) {
+        renderEditPanel(d);
+        updateChatInputState();
+        refreshV2State();
+        return;
+    }
+
+    const msg = '请确认 ' + agent + ' 的产出';
+    addChat('system', msg);
+    // 构建兼容 V1 的中断展示
+    if(d.content){
+      if(agent === 'story' && d.content.stage === 'topics' && d.content.topics){
+        if (!stateData) stateData = {};
+        stateData.topic = {suggestions:d.content.topics, selected:-1};
+        showActions(['请选择一个选题']);
+      } else if(agent === 'story' && d.content.stage === 'expansion'){
+        if (!stateData) stateData = {};
+        stateData.story = {one_sentence:d.content.one_sentence,step2:d.content.expansion,confirmed_at:null};
+        showActions(['请确认故事摘要，或提出修改意见']);
+      } else if(agent === 'character'){
+        if (!stateData) stateData = {};
+        stateData.characters = d.content.characters;
+        stateData.characters_confirmed_at = null;
+        showActions(['请确认角色设定']);
+      } else if(agent === 'world'){
+        showActions(['请确认世界观设定']);
+      } else if(agent === 'outline'){
+        showActions(['请确认章纲']);
+      } else if(agent === 'writer'){
+        if (!stateData) stateData = {};
+        if (!stateData.drafts) stateData.drafts = {};
+        if (!stateData.drafts.chapters) stateData.drafts.chapters = {};
+        stateData.drafts.chapters[d.chapter_num] = {draft:{content:d.content.content},word_count:d.content.word_count,stage:'draft'};
+        showActions(['初稿生成完毕，请确认']);
+      } else {
+        showActions(['请确认 ' + agent + ' 的产出']);
+      }
+    }
+    updateChatInputState();
+    refreshV2State();
+  });
+
+  sseClient.addEventListener('done', e => {
+    const d = JSON.parse(e.data);
+    console.log('[SSE] done', d.reason || '');
+    hasInterrupt = true;
+    addChat('system', '🎉 全书写作完成！' + (d.reason ? ' ' + d.reason : ''));
+    setChatStatus('写作完成');
+    var exportBtn = document.getElementById('exportBtn');
+    if (exportBtn) exportBtn.style.display = 'inline-block';
+    var chatInput = document.querySelector('.chat-input-area');
+    if (chatInput) chatInput.style.display = 'none';
+  });
+
+  sseClient.addEventListener('auxiliary_check', e => {
+    const d = JSON.parse(e.data);
+    const ch = d.chapter_num || 0;
+    const checks = d.checks || [];
+    if (!checks.length) return;
+    let html = '<div class="chat-msg system"><div class="role">WriteSync</div>'
+      + '📋 第' + ch + '章 辅助检查清单：<div style="margin-top:8px;display:flex;flex-direction:column;gap:4px">';
+    checks.forEach(c => {
+      const icon = c.status === 'pass' ? '✅' : '⚠️';
+      const color = c.status === 'pass' ? 'var(--success)' : 'var(--accent-dim)';
+      html += '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:12px">'
+        + '<span style="color:' + color + '">' + icon + '</span> '
+        + '<strong>' + esc(c.name) + '</strong>'
+        + (c.detail ? ' <span style="color:var(--text-muted)">' + esc(c.detail) + '</span>' : '')
+        + '</div>';
+    });
+    html += '</div></div>';
+    document.getElementById('chatMessages').insertAdjacentHTML('beforeend', html);
+    const area = document.getElementById('chatMessages');
+    area.lastChild && area.lastChild.scrollIntoView({behavior:'smooth',block:'end'});
+    // 同步渲染到辅助检查面板
+    renderAuxChecks(ch, checks);
+  });
+
+  sseClient.addEventListener('error', e => {
+    let msg = '发生错误';
+    try { if(e.data){ const d=JSON.parse(e.data); msg=d.message||msg; } } catch(_){}
+    addChat('system', '❌ ' + msg);
+    setChatStatus('出错: ' + msg);
+    // 降级到轮询
+    if(sseClient.readyState === EventSource.CLOSED){
+      v2Mode = false;
+      schedulePoll();
+    }
+  });
+
+  sseClient.onerror = () => {
+    if(sseClient.readyState === EventSource.CLOSED){
+      addChat('system', '⚠️ SSE 连接断开，切换到轮询模式');
+      v2Mode = false;
+      schedulePoll();
+    }
+  };
+}
+
+function disconnectSSE(){
+  if(sseClient){ sseClient.close(); sseClient = null; }
+  v2ProjectId = null; v2Mode = false;
+}
+
+async function startV2Session(idea, platform, model){
+  submitting = true; hasInterrupt = false;
+  const b = document.getElementById('startBtn');
+  if(b){ b.disabled = true; b.textContent = '启动中...'; }
+  setChatStatus('AI 思考中...');
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('projectGrid').style.display = 'none';
+  document.getElementById('workbench').style.display = 'block';
+
+  const f = new FormData();
+  f.append('idea', idea); f.append('platform', platform); f.append('model', model);
+
+  try {
+    const r = await fetch('/api/v2/start', {method:'POST', body:f});
+    const d = await r.json();
+    if(!d.ok){ throw new Error(d.error); }
+    sessionId = d.project_id;
+    localStorage.setItem('ws_session', 'v2:' + d.project_id);
+    connectSSE(d.project_id);
+    submitting = false;
+    if(b){ b.disabled = false; b.textContent = '已启动'; }
+    // Trigger initial status refresh
+    setTimeout(() => refreshV2State(), 500);
+  } catch(e){
+    document.getElementById('setupOverlay').style.display = 'flex';
+    document.getElementById('workbench').style.display = 'none';
+    document.getElementById('setupError').textContent = '创建失败: ' + e.message;
+    document.getElementById('setupError').style.display = 'block';
+    submitting = false;
+    if(b){ b.disabled = false; b.textContent = '开始创作 →'; }
+  }
+}
+
+async function loadV2Project(projectId){
+  document.getElementById('loadingOverlay').style.display = 'flex';
+  try {
+    const f = new FormData(); f.append('project_id', projectId);
+    const r = await fetch('/api/v2/start', {method:'POST', body:f});
+    const d = await r.json();
+    if(!d.ok){ throw new Error(d.error); }
+    sessionId = projectId;
+    localStorage.setItem('ws_session', 'v2:' + projectId);
+    document.getElementById('loadingOverlay').style.display = 'none';
+    document.getElementById('projectGrid').style.display = 'none';
+    document.getElementById('workbench').style.display = 'block';
+    connectSSE(projectId);
+    await refreshV2State();
+  } catch(e){
+    document.getElementById('loadingOverlay').style.display = 'none';
+    alert('加载失败: ' + e.message);
+  }
+}
+
+async function resumeV2(action, feedback){
+  console.log('[resumeV2] action=%s feedback=%s v2ProjectId=%s', action, feedback || '', v2ProjectId || '');
+  if(!v2ProjectId) return;
+  const approved = (action === 'y' || action === 'confirm' || action === 'edit');
+  const f = new FormData();
+  f.append('approved', approved.toString());
+  if(feedback) f.append('feedback', feedback);
+  f.append('scope', 'all');
+  await fetch('/api/v2/respond/' + v2ProjectId, {method:'POST', body:f});
+  hasInterrupt = false;
+  updateChatInputState();
+  setChatStatus('AI 思考中...');
+}
+
+// ======== 创作规则面板 ========
+let _rulesData = null;
+
+async function loadRules(){
+  if(!v2ProjectId) return null;
+  try {
+    const r = await fetch('/api/rules/' + v2ProjectId);
+    const d = await r.json();
+    if(d.ok){ _rulesData = d.rules; return d.rules; }
+  } catch(e){ console.log('[rules] load error:', e); }
+  return null;
+}
+
+function renderRules(){
+  if(currentPanel!=='rules')return;
+  let h='<div class="panel-header"><h2>📏 创作规则</h2><div class="actions"><span id="rules-saved" style="font-size:11px;color:var(--success);display:none">已保存</span></div></div>';
+  h+='<div class="panel-body rules-panel" id="rulesBody">';
+  h+='<div id="rules-form"></div>';
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  // async load
+  loadRules().then(r => renderRulesForm(r));
+}
+
+function renderRulesForm(rules){
+  rules = rules || {perspective:'third_person_omniscient',tone:'',taboos:[],reference_works:[],custom_rules:''};
+  _rulesData = rules;
+  const f = document.getElementById('rules-form');
+  if(!f) return;
+  const tabs=escapeHtml(Array.isArray(rules.taboos)?rules.taboos.join(', '):(rules.taboos||''));
+  const refs=escapeHtml(Array.isArray(rules.reference_works)?rules.reference_works.join(', '):(rules.reference_works||''));
+  f.innerHTML = `
+    <label>叙述视角</label>
+    <select id="rule-perspective">
+      <option value="first_person" ${rules.perspective==='first_person'?'selected':''}>第一人称</option>
+      <option value="third_person_limited" ${rules.perspective==='third_person_limited'?'selected':''}>第三人称限知</option>
+      <option value="third_person_omniscient" ${rules.perspective==='third_person_omniscient'?'selected':''}>第三人称全知</option>
+    </select>
+    <label>基调风格</label>
+    <input id="rule-tone" placeholder="例如：轻松诙谐、严肃深沉、热血燃系..." value="${escapeHtml(rules.tone||'')}">
+    <label>写作禁忌（用逗号分隔）</label>
+    <div class="tag-input-wrap" id="rule-taboos-wrap">
+      ${renderTagChips(rules.taboos||[],'taboo')}
+      <input id="rule-taboos-input" placeholder="输入后回车添加..." onkeydown="if(event.key==='Enter'){event.preventDefault();addTagChip('taboo')}">
+    </div>
+    <label>参考作品（用逗号分隔）</label>
+    <div class="tag-input-wrap" id="rule-refs-wrap">
+      ${renderTagChips(rules.reference_works||[],'ref')}
+      <input id="rule-refs-input" placeholder="输入后回车添加..." onkeydown="if(event.key==='Enter'){event.preventDefault();addTagChip('ref')}">
+    </div>
+    <label>自定义规则</label>
+    <textarea id="rule-custom" rows="4" placeholder="其他特殊的创作要求...">${escapeHtml(rules.custom_rules||'')}</textarea>
+    <button class="btn-save" onclick="saveRules()">💾 保存规则</button>
+  `;
+}
+
+function renderTagChips(items,type){
+  if(!items||!items.length) return '';
+  return items.map((v,i)=>`<span class="tag-chip">${escapeHtml(v)}<span class="tag-remove" onclick="removeTagChip('${type}',${i})">&times;</span></span>`).join('');
+}
+
+function getTagsFromWrap(type){
+  const wrap = document.getElementById(type==='taboo'?'rule-taboos-wrap':'rule-refs-wrap');
+  if(!wrap) return [];
+  const chips = wrap.querySelectorAll('.tag-chip');
+  return Array.from(chips).map(c => c.textContent.replace('×','').trim());
+}
+
+function addTagChip(type){
+  const inp = document.getElementById(type==='taboo'?'rule-taboos-input':'rule-refs-input');
+  const wrap = document.getElementById(type==='taboo'?'rule-taboos-wrap':'rule-refs-wrap');
+  if(!inp||!wrap) return;
+  const val = inp.value.trim();
+  if(!val) return;
+  // Add chip before the input
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip';
+  const existing = getTagsFromWrap(type);
+  const idx = existing.length;
+  chip.innerHTML = `${escapeHtml(val)}<span class="tag-remove" onclick="removeTagChip('${type}',${idx})">&times;</span>`;
+  wrap.insertBefore(chip, inp);
+  // Clear input
+  inp.value = '';
+  // Auto-save
+  autoSaveRules();
+}
+
+function removeTagChip(type,idx){
+  const wrap = document.getElementById(type==='taboo'?'rule-taboos-wrap':'rule-refs-wrap');
+  if(!wrap) return;
+  const chips = wrap.querySelectorAll('.tag-chip');
+  if(chips[idx]) chips[idx].remove();
+  // Re-index remaining chips
+  const remaining = wrap.querySelectorAll('.tag-chip');
+  remaining.forEach((c,i) => {
+    const rm = c.querySelector('.tag-remove');
+    if(rm) rm.setAttribute('onclick', `removeTagChip('${type}',${i})`);
+  });
+  autoSaveRules();
+}
+
+function autoSaveRules(){
+  document.getElementById('rules-saved').style.display = 'none';
+  debounceSaveRules();
+}
+
+let _rulesSaveTimer = null;
+function debounceSaveRules(){
+  if(_rulesSaveTimer) clearTimeout(_rulesSaveTimer);
+  _rulesSaveTimer = setTimeout(() => saveRules(), 2000);
+}
+
+async function saveRules(){
+  if(!v2ProjectId) return;
+  const rules = {
+    perspective: document.getElementById('rule-perspective')?.value || 'third_person_omniscient',
+    tone: document.getElementById('rule-tone')?.value || '',
+    taboos: getTagsFromWrap('taboo'),
+    reference_works: getTagsFromWrap('ref'),
+    custom_rules: document.getElementById('rule-custom')?.value || '',
+  };
+  try {
+    const r = await fetch('/api/rules/' + v2ProjectId, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(rules)
+    });
+    const d = await r.json();
+    if(d.ok){
+      _rulesData = d.rules;
+      document.getElementById('rules-saved').style.display = 'inline';
+      setTimeout(() => { document.getElementById('rules-saved').style.display = 'none'; }, 3000);
+      console.log('[rules] saved, prompt snippet:', d.prompt_snippet?.substring(0,60));
+    }
+  } catch(e){ console.log('[rules] save error:', e); }
+}
+
+function escapeHtml(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ======== 灵感反推 ========
+let _inspireData = null;
+let _inspireTab = 'story';
+
+function showInspireModal(){
+  document.getElementById('inspireOverlay').style.display = 'flex';
+  document.getElementById('inspireResult').style.display = 'none';
+  document.getElementById('inspireError').style.display = 'none';
+  document.getElementById('inspireSeed').value = '';
+  document.getElementById('inspireSeed').focus();
+}
+
+function hideInspireModal(){
+  document.getElementById('inspireOverlay').style.display = 'none';
+  _inspireData = null;
+}
+
+async function doInspire(){
+  const seed = document.getElementById('inspireSeed').value.trim();
+  if(!seed){ showInspireError('请输入灵感想法'); return; }
+  const btn = document.getElementById('inspireBtn');
+  btn.disabled = true; btn.textContent = '生成中...';
+  document.getElementById('inspireError').style.display = 'none';
+  document.getElementById('inspireResult').style.display = 'none';
+  try {
+    const r = await fetch('/api/inspire', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({seed: seed})
+    });
+    const d = await r.json();
+    if(!d.ok){
+      showInspireError(d.error || '生成失败');
+      btn.disabled = false; btn.textContent = '生成灵感';
+      return;
+    }
+    _inspireData = d.data;
+    _inspireTab = 'story';
+    document.getElementById('inspireResult').style.display = 'block';
+    // Reset tabs
+    document.querySelectorAll('.inspire-tab').forEach(t => t.classList.remove('active'));
+    const activeTab = document.querySelector('.inspire-tab[data-itab="story"]');
+    if(activeTab) activeTab.classList.add('active');
+    renderInspireTab();
+  } catch(e){
+    showInspireError('网络错误: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '生成灵感';
+}
+
+function showInspireError(msg){
+  const el = document.getElementById('inspireError');
+  el.textContent = msg; el.style.display = 'block';
+}
+
+function switchInspireTab(tab){
+  _inspireTab = tab;
+  document.querySelectorAll('.inspire-tab').forEach(t => t.classList.toggle('active', t.dataset.itab === tab));
+  renderInspireTab();
+}
+
+function renderInspireTab(){
+  if(!_inspireData) return;
+  const container = document.getElementById('inspireTabContent');
+  if(!container) return;
+  let h = '';
+  const d = _inspireData;
+  if(_inspireTab === 'story'){
+    const sc = d.story_core || {};
+    h += '<div style="margin-bottom:12px"><strong style="color:var(--accent)">一句话核心：</strong>'+escapeHtml(sc.one_sentence||'')+'</div>';
+    h += '<div><strong>标签：</strong>'+escapeHtml(sc.tag||'')+'</div>';
+  } else if(_inspireTab === 'world'){
+    const wb = d.world_building || {};
+    h += '<div style="margin-bottom:10px"><strong style="color:var(--accent)">力量体系</strong><div>'+escapeHtml(wb.power_system||'')+'</div></div>';
+    h += '<div style="margin-bottom:10px"><strong style="color:var(--accent)">主要地点</strong><div>'+escapeHtml(wb.major_locations||'')+'</div></div>';
+    h += '<div><strong style="color:var(--accent)">势力</strong><div>'+escapeHtml(wb.factions||'')+'</div></div>';
+  } else if(_inspireTab === 'chars'){
+    const chars = d.main_characters || [];
+    chars.forEach((c,i) => {
+      h += '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px">';
+      h += '<strong style="color:var(--accent)">'+escapeHtml(c.name)+'</strong> <span style="font-size:11px;color:var(--text-muted)">'+escapeHtml(c.role)+'</span>';
+      h += '<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">性格：'+escapeHtml(c.personality||'')+'</div>';
+      h += '<div style="font-size:12px;color:var(--text-secondary)">目标：'+escapeHtml(c.goal||'')+'</div>';
+      h += '</div>';
+    });
+  } else if(_inspireTab === 'outline'){
+    const outline = d.outline_preview || [];
+    outline.forEach((ch,i) => {
+      h += '<div style="background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:8px">';
+      h += '<strong style="color:var(--accent)">第'+(i+1)+'章：'+escapeHtml(ch.chapter_title||'')+'</strong>';
+      h += '<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">'+escapeHtml(ch.core_event||'')+'</div>';
+      h += '</div>';
+    });
+  }
+  container.innerHTML = h;
+}
+
+async function adoptInspire(){
+  if(!_inspireData || !_inspireData.story_core) return;
+  const platform = document.getElementById('inspirePlatform')?.value || '起点';
+  const btn = document.getElementById('adoptInspireBtn');
+  btn.disabled = true; btn.textContent = '创建中...';
+  try {
+    const r = await fetch('/api/inspire/adopt', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({data: _inspireData, platform: platform})
+    });
+    const d = await r.json();
+    if(!d.ok){ alert('创建失败: ' + (d.error||'')); btn.disabled = false; btn.textContent = '✨ 采纳并创建项目'; return; }
+    // Close modal and open project
+    hideInspireModal();
+    document.getElementById('setupOverlay').style.display = 'none';
+    document.getElementById('projectGrid').style.display = 'none';
+    document.getElementById('workbench').style.display = 'block';
+    sessionId = d.project_id;
+    v2ProjectId = d.project_id;
+    localStorage.setItem('ws_session', 'v2:' + d.project_id);
+    connectSSE(d.project_id);
+    setTimeout(() => refreshV2State(), 500);
+  } catch(e){
+    alert('创建失败: ' + e.message);
+    btn.disabled = false; btn.textContent = '✨ 采纳并创建项目';
+  }
+}
+// 加载顺序：
+//   edit-panel.js    (定义 EDITABLE_MODE_SAVE、renderEditPanel、submitEdit、cancelEdit、resumeV2Edit、skipEdit)
+//   diff-panel.js    (依赖 EDITABLE_MODE_SAVE，提供 renderDiffPanel、previewEdit、confirmEdit、backToEdit)
+//   stale-warning.js (独立：renderPanelWithStale、applyStaleWarningToCurrentPanel)
+// 这些函数通过 <script src="..."> 引入，加载顺序由 HTML 中的标签顺序保证。
+
+async function refreshV2State(){
+  if(!v2ProjectId) return;
+  try {
+    const r = await fetch('/api/v2/status/' + v2ProjectId);
+    const d = await r.json();
+    if(d.ok){
+      console.log('[V2state]', JSON.stringify(d).substring(0,300));
+      stateData = d;
+      if (d.stale_markers) stateData.stale_markers = d.stale_markers;
+      renderAllPanels(); updateTags();
+      // After the panel DOM is in place, decorate the header with
+      // a stale-warning badge if this panel is downstream of an edit.
+      if (typeof applyStaleWarningToCurrentPanel === 'function') {
+        applyStaleWarningToCurrentPanel();
+      }
+    }
+  } catch(e){ console.log('[V2state] error:', e); }
+}
+
+// 修改 sendChat 支持 V2
+const _origSendChat = sendChat;
+sendChat = function(){
+  if(v2Mode && hasInterrupt){
+    const inp = document.getElementById('chatInput');
+    const text = inp ? inp.value.trim() : '';
+    inp.value = '';
+    if(text){
+      resumeV2('modify', text);
+      addChat('user', text);
+    } else {
+      resumeV2('confirm', '');
+    }
+    return;
+  }
+  _origSendChat();
+};
+</script>
+
+<!-- Modular scripts (extracted from inline code on 2026-07-13).
+     These must load AFTER the inline <script> above — they depend on
+     `esc`, `addChat`, `setChatStatus`, `updateChatInputState`,
+     `stateData`, `v2ProjectId`, `hasInterrupt`, `currentPanel`.
+
+     Load order matters: edit-panel.js defines EDITABLE_MODE_SAVE which
+     diff-panel.js reads/writes. -->
+<script src="/static/edit-panel.js"></script>
+<script src="/static/diff-panel.js"></script>
+<script src="/static/stale-warning.js"></script>
+<script src="/static/provider-config.js"></script>
+</body>
+</html>

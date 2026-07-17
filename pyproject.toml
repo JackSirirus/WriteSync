@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "writesync"
+version = "0.4.0"
+description = "Multi-Agent 协作小说写作平台，基于雪花写作法"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0.0",
+    "openai>=1.0.0",
+    "instructor>=1.0.0",
+]
+
+[project.scripts]
+writesync = "src.cli:main"
+writesync-web = "src.web.run:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::UserWarning"]
+markers = ["e2e: marks tests that call real LLM APIs (deselect with '-m not e2e')"]

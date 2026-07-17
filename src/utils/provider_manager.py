@@ -234,11 +234,31 @@ _manager_instance: Optional[ProviderManager] = None
 
 
 def get_provider_manager() -> ProviderManager:
-    """Return the global ProviderManager singleton."""
+    """Return the global ProviderManager singleton, seeded with defaults if empty."""
     global _manager_instance
     if _manager_instance is None:
         _manager_instance = ProviderManager()
+        # Seed default provider if no configs exist yet
+        if len(_manager_instance.list_providers()) == 0:
+            _seed_defaults(_manager_instance)
     return _manager_instance
+
+
+def _seed_defaults(pm: ProviderManager) -> None:
+    """Create default provider configs on first use."""
+    import os
+    # Default: OpenCode Go gateway (existing infrastructure)
+    default_base = os.environ.get("LLM_BASE_URL", "http://127.0.0.1:7788/v1")
+    default_key = os.environ.get("LLM_API_KEY", "")
+    pm.add_provider(AIProviderConfig(
+        name="opencode",
+        provider_type="openai",
+        base_url=default_base,
+        api_key=default_key,
+        default_model=os.environ.get("LLM_MODEL", "deepseek-v4-flash"),
+        is_default=True,
+    ))
+    logger.info("Seeded default provider: opencode at %s", default_base)
 
 
 def reset_provider_manager() -> None:

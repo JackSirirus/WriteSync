@@ -16,6 +16,7 @@ import shutil
 import json
 import pytest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 os.environ["LANGGRAPH_STRICT_MSGPACK"] = "false"
@@ -272,6 +273,92 @@ def main():
     print("=" * 60)
 
     return 0 if tr.failed == 0 else 1
+
+
+# ── stale_tracker 集成测试 ──
+
+def test_stale_tracker_after_story_edit(tr):
+    """编辑 story 后，下游 agents 应被标记为 stale"""
+    from src.orchestrator.stale_tracker import mark_stale, get_stale_info
+
+    ws = MagicMock()
+    ws.raw_state.stale_markers = {}
+    ws.save = MagicMock()
+
+    mark_stale(ws, "story")
+    markers = get_stale_info(ws)
+
+    tr.assert_true("character" in markers, "character should be stale after story edit")
+    tr.assert_true("world" in markers, "world should be stale after story edit")
+    tr.assert_true("outline" in markers, "outline should be stale after story edit")
+    tr.assert_true("writer" in markers, "writer should be stale after story edit")
+
+
+def test_stale_tracker_after_character_edit(tr):
+    """编辑 character 后，outline 和 writer 应被标记为 stale"""
+    from src.orchestrator.stale_tracker import mark_stale, get_stale_info
+
+    ws = MagicMock()
+    ws.raw_state.stale_markers = {}
+    ws.save = MagicMock()
+
+    mark_stale(ws, "character")
+    markers = get_stale_info(ws)
+
+    tr.assert_true("outline" in markers, "outline should be stale after character edit")
+    tr.assert_true("writer" in markers, "writer should be stale after character edit")
+    tr.assert_true("proofreader" not in markers, "proofreader should NOT be stale")
+
+
+def test_stale_tracker_clear_after_reconfirmation(tr):
+    """重新确认后，stale 标记应被清除"""
+    from src.orchestrator.stale_tracker import mark_stale, clear_stale, get_stale_info
+
+    ws = MagicMock()
+    ws.raw_state.stale_markers = {}
+    ws.save = MagicMock()
+
+    mark_stale(ws, "story")
+    clear_stale(ws, "character")
+    markers = get_stale_info(ws)
+
+    tr.assert_true("character" not in markers, "character should be cleared")
+    tr.assert_true("outline" in markers, "outline should still be stale")
+
+
+def test_stale_tracker_cascade(tr):
+    """多级级联：story→character→outline→writer"""
+    from src.orchestrator.stale_tracker import mark_stale, get_stale_info
+
+    ws = MagicMock()
+    ws.raw_state.stale_markers = {}
+    ws.save = MagicMock()
+
+    # story 编辑
+    mark_stale(ws, "story")
+    # character 重新确认后也编辑
+    mark_stale(ws, "character")
+    markers = get_stale_info(ws)
+
+    # outline 应同时被 story 和 character 标记
+    outline_sources = set(markers.get("outline", []))
+    tr.assert_true("story" in outline_sources, "outline stale from story")
+    tr.assert_true("character" in outline_sources, "outline stale from character")
+
+
+def test_stale_tracker_writer_only_affects_proofreader(tr):
+    """writer 编辑只影响 proofreader"""
+    from src.orchestrator.stale_tracker import mark_stale, get_stale_info
+
+    ws = MagicMock()
+    ws.raw_state.stale_markers = {}
+    ws.save = MagicMock()
+
+    mark_stale(ws, "writer")
+    markers = get_stale_info(ws)
+
+    tr.assert_true("proofreader" in markers, "proofreader should be stale")
+    tr.assert_true(len(markers) == 1, "only proofreader should be stale")
 
 
 if __name__ == "__main__":

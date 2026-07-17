@@ -245,12 +245,26 @@ class OutlineState:
 
 @dataclass
 class Foreshadow:
-    """伏笔"""
+    """伏笔（章节级）"""
     content: str                        # 伏笔内容
     planted_at: int                     # 植入章节编号
     payoff_chapter: int = 0             # 回收章节编号
     payoff_content: str = ""           # 回收内容
     status: str = "planted"            # "planted" | "paid_off" | "abandoned"
+
+
+@dataclass
+class GlobalForeshadow:
+    """全书级伏笔（Phase 4）"""
+    id: str                             # 唯一标识 (e.g. "fs-001")
+    content: str                        # 伏笔内容
+    planted_at: int                     # 植入章节编号
+    status: str = "planned"            # "planned" | "planted" | "called_back" | "resolved"
+    urgency: str = "normal"            # "low" | "normal" | "high" | "critical"
+    related_chapters: list[int] = field(default_factory=list)  # 关联章节
+    payoff_chapter: int = 0             # 回收章节编号
+    payoff_content: str = ""           # 回收内容
+    created_at: str = ""               # ISO timestamp
 
 
 @dataclass
@@ -561,6 +575,7 @@ class WriteSyncState:
     chapter_outline: Optional[ChapterOutlineState] = None
     drafts: DraftsState = field(default_factory=DraftsState)
     novel_review: Optional[NovelReviewState] = None  # Step9 全书审查
+    global_foreshadows: list[GlobalForeshadow] = field(default_factory=list)  # Phase 4: 全书级伏笔
 
     # v0.4.0 分卷 + 网文策略
     volumes: list[VolumeState] = field(default_factory=list)

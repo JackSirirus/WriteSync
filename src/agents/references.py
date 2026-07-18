@@ -32,6 +32,7 @@ class ReferenceMaterial:
     content: str = ""                     # 资料内容
     ref_type: str = "note"               # "setting" | "character" | "plot" | "research" | "note"
     tags: list[str] = field(default_factory=list)   # 标签列表
+    source_url: str = ""                  # 资料来源 URL（可选）
     created_at: str = ""                  # ISO timestamp
 
     def __post_init__(self):
@@ -49,6 +50,7 @@ class ReferenceMaterial:
             "content": self.content,
             "ref_type": self.ref_type,
             "tags": self.tags,
+            "source_url": self.source_url,
             "created_at": self.created_at,
         }
 
@@ -61,6 +63,7 @@ class ReferenceMaterial:
             content=d.get("content", ""),
             ref_type=d.get("ref_type", "note"),
             tags=d.get("tags", []),
+            source_url=d.get("source_url", ""),
             created_at=d.get("created_at", ""),
         )
 

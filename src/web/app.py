@@ -884,6 +884,44 @@ def delete_timeline_event(project_id: str, event_id: str):
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
+@app.post("/api/timeline/{project_id}/extract")
+async def extract_timeline_events(project_id: str, request: Request):
+    """Auto-extract timeline events from all confirmed chapters.
+    Iterates over every chapter that has final content, runs LLM extraction
+    (60s timeout → regex fallback), and returns the total new events added.
+    """
+    ws = _get_ws(project_id)
+    if ws is None:
+        return JSONResponse({"ok": False, "error": "项目不存在"}, status_code=404)
+    try:
+        from src.agents.timeline import TimelineManager
+        mgr = TimelineManager(project_id)
+        s = ws.raw_state
+        total_new = 0
+        chapters_processed = 0
+        if s.drafts and s.drafts.chapters:
+            for ch_num in sorted(s.drafts.chapters.keys()):
+                cd = s.drafts.chapters[ch_num]
+                content = ""
+                if cd.final and cd.final.content:
+                    content = cd.final.content
+                elif cd.draft and cd.draft.content:
+                    content = cd.draft.content
+                if content and len(content) > 50:
+                    new_events = mgr.auto_extract(content, ch_num)
+                    if new_events:
+                        total_new += len(new_events)
+                        chapters_processed += 1
+        return JSONResponse({
+            "ok": True,
+            "extracted": total_new,
+            "chapters_processed": chapters_processed,
+        })
+    except Exception as e:
+        logger.error("[api] timeline extract failed: %s", e)
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
 # =============================================================================
 # Phase 6: Style Learner API
 # =============================================================================
@@ -913,6 +951,40 @@ def get_style_profile(project_id: str):
         return JSONResponse({"ok": True, "profile": merged.to_dict()})
     except Exception as e:
         logger.error("[api] style profile fetch failed: %s", e)
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@app.post("/api/style/{project_id}/analyze")
+async def analyze_style_profile(project_id: str, request: Request):
+    """Re-analyze style profile for a project.
+    Re-computes the merged style profile from all confirmed chapters
+    and returns the same shape as GET /api/style/{project_id}.
+    """
+    ws = _get_ws(project_id)
+    if ws is None:
+        return JSONResponse({"ok": False, "error": "项目不存在"}, status_code=404)
+    try:
+        from src.agents.style_learner import StyleLearner, StyleProfile
+        s = ws.raw_state
+        profiles = []
+        if s.drafts and s.drafts.chapters:
+            for ch_num in sorted(s.drafts.chapters.keys()):
+                cd = s.drafts.chapters[ch_num]
+                content = ""
+                if cd.final and cd.final.content:
+                    content = cd.final.content
+                elif cd.draft and cd.draft.content:
+                    content = cd.draft.content
+                if content and len(content) > 50:
+                    profiles.append(StyleLearner.analyze_chapter(content))
+        merged = StyleLearner.merge_profiles(profiles) if profiles else StyleProfile()
+        return JSONResponse({
+            "ok": True,
+            "profile": merged.to_dict(),
+            "chapters_analyzed": len(profiles),
+        })
+    except Exception as e:
+        logger.error("[api] style analyze failed: %s", e)
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
@@ -957,6 +1029,7 @@ async def create_reference(project_id: str, request: Request):
             content=body.get("content", ""),
             ref_type=body.get("ref_type", "note"),
             tags=body.get("tags", []),
+            source_url=body.get("source_url", ""),
         )
         mgr.create(ref)
         return JSONResponse({"ok": True, "reference": ref.to_dict()})
@@ -975,7 +1048,7 @@ async def update_reference(project_id: str, ref_id: str, request: Request):
         body = await request.json()
         from src.agents.references import ReferenceManager
         mgr = ReferenceManager(project_id)
-        allowed = ["title", "content", "ref_type", "tags"]
+        allowed = ["title", "content", "ref_type", "tags", "source_url"]
         updates = {k: v for k, v in body.items() if k in allowed}
         ok = mgr.update(ref_id, **updates)
         return JSONResponse({"ok": ok})
@@ -1076,6 +1149,24 @@ def get_usage_stats(project_id: str):
         return JSONResponse({"ok": True, "stats": stats, "records": records[-100:]})
     except Exception as e:
         logger.error("[api] usage stats failed: %s", e)
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
+
+
+@app.get("/api/usage")
+def get_global_usage_stats():
+    """Get LLM usage statistics across all projects."""
+    try:
+        from src.utils.usage_tracker import UsageTracker
+        tracker = UsageTracker()
+        stats = tracker.get_global_stats()
+        records = tracker.get_all_records("")  # all records
+        return JSONResponse({
+            "ok": True,
+            "stats": stats,
+            "records": records[-100:],
+        })
+    except Exception as e:
+        logger.error("[api] global usage stats failed: %s", e)
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 

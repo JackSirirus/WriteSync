@@ -162,6 +162,121 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
 @media(max-width:1100px){.chat{display:none}.center{width:100%}#chatBtn{display:flex}}
 @media(max-width:900px){.nav{position:fixed;z-index:50;left:-260px;top:48px;bottom:0;transition:left .3s}.nav.open{left:0}#navToggle{display:flex}.center{width:100%}.panel-body{padding:12px}.panel-header{padding:8px 12px}.chat{display:none!important}}
 
+/* ── Phase 6 Panels: Timeline / Style / References / Usage ── */
+
+/* Timeline */
+.tl-event{position:relative;padding:12px 14px;margin-bottom:10px;background:var(--bg-elevated);border-radius:0 var(--radius-sm) var(--radius-sm) 0;transition:border-color .15s,background .15s}
+.tl-event:hover{background:var(--bg-hover)}
+.tl-event .tl-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:6px}
+.tl-event .tl-time{font-weight:600;font-size:13px;color:var(--text-primary);font-family:var(--font-serif)}
+.tl-event .tl-chapter{font-size:10px;padding:2px 6px;border-radius:4px;background:var(--bg-deep);color:var(--text-muted);font-variant-numeric:tabular-nums}
+.tl-event .tl-desc{font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:8px}
+.tl-event .tl-meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.tl-event .tl-actions{margin-left:auto;display:flex;gap:4px}
+.tl-event .tl-actions button{font-size:10px;padding:3px 8px;border-radius:4px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;font-family:var(--font-sans);transition:all .15s}
+.tl-event .tl-actions button:hover{border-color:var(--accent);color:var(--accent)}
+.tl-event .tl-actions button.danger:hover{border-color:var(--danger);color:var(--danger)}
+.tl-type-pill{font-size:10px;padding:2px 8px;border-radius:4px;font-weight:500;letter-spacing:.3px}
+.tl-type-pill.plot{background:rgba(212,168,83,.15);color:#d4a853}
+.tl-type-pill.character{background:rgba(92,184,92,.15);color:#5cb85c}
+.tl-type-pill.world{background:rgba(139,92,246,.15);color:#a78bfa}
+.timeline-empty,.style-empty,.ref-empty,.usage-empty{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.timeline-empty .icon,.style-empty .icon,.ref-empty .icon,.usage-empty .icon{font-size:42px;margin-bottom:14px;opacity:.7}
+.timeline-empty .hint,.style-empty .hint,.ref-empty .hint,.usage-empty .hint{font-size:12px;margin-top:6px;line-height:1.5;opacity:.85}
+
+/* Style panel */
+.style-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.style-stat{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px 12px;text-align:center;position:relative;overflow:hidden}
+.style-stat::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-gradient);opacity:.5}
+.style-stat .stat-label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
+.style-stat .stat-value{font-family:var(--font-serif);font-size:28px;font-weight:700;color:var(--accent);line-height:1.1;margin-bottom:2px}
+.style-stat .stat-unit{font-size:11px;color:var(--text-muted)}
+.style-stat.compact .stat-value{font-size:22px}
+.style-bar-group{margin:8px 0}
+.style-bar-group .bar-head{display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px}
+.style-bar-group .bar-head strong{color:var(--text-primary);font-weight:600}
+.style-bar-track{height:10px;background:var(--border);border-radius:5px;overflow:hidden;position:relative}
+.style-bar-fill{height:100%;border-radius:5px;transition:width .5s ease;position:relative}
+.style-bar-fill.dialogue{background:linear-gradient(135deg,#d4a853,#a67c3a)}
+.style-bar-fill.description{background:linear-gradient(135deg,#5cb85c,#4a9a4a)}
+.style-words{display:flex;flex-wrap:wrap;gap:6px;padding:4px 0}
+.style-word{padding:4px 10px;background:var(--bg-deep);border:1px solid var(--border);border-radius:100px;font-size:11px;color:var(--text-primary);display:inline-flex;align-items:center;gap:4px;transition:all .15s}
+.style-word:hover{border-color:var(--accent);background:var(--bg-hover)}
+.style-word .count{font-size:10px;color:var(--text-muted);font-variant-numeric:tabular-nums}
+.style-meta-line{text-align:center;color:var(--text-muted);font-size:10px;margin-top:14px;padding-top:12px;border-top:1px solid var(--border)}
+
+/* References panel */
+.ref-search-row{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.ref-search-row .search-input{flex:1;min-width:200px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none;transition:border-color .2s}
+.ref-search-row .search-input:focus{border-color:var(--accent-dim)}
+.ref-search-row .search-input::placeholder{color:var(--text-muted)}
+.ref-type-pill{font-size:10px;padding:3px 10px;border-radius:100px;font-weight:500;letter-spacing:.3px;display:inline-block}
+.ref-type-pill.setting{background:rgba(92,184,92,.15);color:#5cb85c}
+.ref-type-pill.character{background:rgba(212,168,83,.15);color:#d4a853}
+.ref-type-pill.plot{background:rgba(139,92,246,.15);color:#a78bfa}
+.ref-type-pill.research{background:rgba(96,165,250,.15);color:#60a5fa}
+.ref-type-pill.note{background:rgba(155,155,155,.15);color:var(--text-secondary)}
+.ref-type-pill.worldbuilding{background:rgba(92,184,246,.15);color:#5cb8fa}
+.ref-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:10px;transition:all .15s;cursor:pointer}
+.ref-card:hover{border-color:var(--accent-dim);background:var(--bg-hover)}
+.ref-card .ref-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;gap:8px}
+.ref-card .ref-title{font-family:var(--font-serif);font-size:15px;font-weight:600;color:var(--text-primary);line-height:1.3;flex:1;min-width:0}
+.ref-card .ref-time{font-size:10px;color:var(--text-muted);white-space:nowrap}
+.ref-card .ref-preview{font-size:12px;color:var(--text-secondary);line-height:1.55;margin-bottom:8px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ref-card .ref-footer{display:flex;justify-content:space-between;align-items:center;gap:6px;flex-wrap:wrap}
+.ref-card .ref-tags{display:flex;flex-wrap:wrap;gap:4px}
+.ref-card .ref-tag{font-size:10px;padding:2px 8px;border-radius:100px;background:var(--bg-hover);color:var(--text-muted);border:1px solid transparent;cursor:pointer;transition:all .15s}
+.ref-card .ref-tag:hover{border-color:var(--accent);color:var(--accent)}
+.ref-card .ref-source{font-size:10px;color:var(--text-muted);max-width:60%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ref-card .ref-source a{color:var(--accent-dim);text-decoration:none}
+.ref-card .ref-source a:hover{color:var(--accent);text-decoration:underline}
+.ref-form-row{display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.ref-form-row label{font-size:11px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.5px;width:100%;margin-bottom:2px;margin-top:6px;display:block}
+.ref-form-row input,.ref-form-row select,.ref-form-row textarea{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none;transition:border-color .2s}
+.ref-form-row input:focus,.ref-form-row select:focus,.ref-form-row textarea:focus{border-color:var(--accent-dim)}
+.ref-form-row textarea{resize:vertical;min-height:70px;line-height:1.5}
+.ref-form-row select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%236b6560' d='M6 8L0 0h12z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:30px}
+.ref-form-row .form-col{flex:1;min-width:200px}
+.ref-form-row .form-col.small{flex:0 0 140px}
+.ref-form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:4px}
+.ref-tag-list{display:flex;flex-wrap:wrap;gap:4px;padding:6px 8px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);min-height:36px;align-items:center}
+.ref-tag-list input{border:none!important;background:transparent!important;color:var(--text-primary)!important;font-family:var(--font-sans)!important;font-size:12px!important;outline:none!important;flex:1;min-width:80px;padding:2px 0!important}
+.ref-tag-chip{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:100px;background:var(--accent-glow);color:var(--accent);font-size:11px;border:1px solid var(--accent-dim)}
+.ref-tag-chip .x{cursor:pointer;font-size:13px;line-height:1;opacity:.6;transition:opacity .15s}
+.ref-tag-chip .x:hover{opacity:1}
+
+/* Usage panel */
+.usage-summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.usage-summary{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:18px 14px;text-align:center;position:relative;overflow:hidden}
+.usage-summary::after{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.usage-summary.calls::after{background:linear-gradient(90deg,#d4a853,#a67c3a)}
+.usage-summary.tokens::after{background:linear-gradient(90deg,#60a5fa,#3b82f6)}
+.usage-summary.cost::after{background:linear-gradient(90deg,#5cb85c,#4a9a4a)}
+.usage-summary .label{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.usage-summary .value{font-family:var(--font-serif);font-size:30px;font-weight:700;line-height:1.1;margin-bottom:2px}
+.usage-summary.calls .value{color:#d4a853}
+.usage-summary.tokens .value{color:#60a5fa}
+.usage-summary.cost .value{color:#5cb85c}
+.usage-summary .unit{font-size:11px;color:var(--text-muted)}
+.usage-table{width:100%;border-collapse:collapse;margin-top:4px}
+.usage-table th{font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);font-weight:600}
+.usage-table th.num{text-align:right}
+.usage-table td{font-size:12px;padding:8px 6px;border-bottom:1px solid var(--border);color:var(--text-secondary);font-variant-numeric:tabular-nums}
+.usage-table td.num{text-align:right}
+.usage-table td.name{color:var(--text-primary);font-weight:500}
+.usage-table td.cost{color:#5cb85c}
+.usage-table tr:last-child td{border-bottom:none}
+.usage-table tr:hover td{background:var(--bg-hover)}
+.usage-recent{display:flex;flex-direction:column;gap:6px;margin-top:4px}
+.usage-recent-row{display:grid;grid-template-columns:1.2fr 1.3fr 0.7fr 1fr;gap:10px;align-items:center;padding:8px 12px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:6px;font-size:12px;transition:all .15s}
+.usage-recent-row:hover{border-color:var(--accent-dim)}
+.usage-recent-row .agent{color:var(--text-primary);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usage-recent-row .model{color:var(--text-muted);font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.usage-recent-row .tokens{color:var(--accent);font-variant-numeric:tabular-nums;text-align:right}
+.usage-recent-row .ts{color:var(--text-muted);font-size:10px;text-align:right}
+.usage-section-title{font-size:11px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:1.5px;margin:18px 0 8px;display:flex;align-items:center;gap:6px}
+.usage-section-title::before{content:'';width:3px;height:11px;background:var(--accent);border-radius:2px}
+
 /* Floating chat button */
 #chatBtn{display:none;position:fixed;bottom:20px;right:20px;width:48px;height:48px;border-radius:50%;background:var(--accent);color:var(--bg-deep);border:none;font-size:20px;cursor:pointer;z-index:60;box-shadow:0 4px 12px rgba(0,0,0,.5);align-items:center;justify-content:center}
 #navToggle{display:none;cursor:pointer;padding:4px 8px;border:none;background:transparent;color:var(--text-primary);font-size:18px;font-family:var(--font-sans)}
@@ -351,6 +466,41 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
 .rules-panel textarea{resize:vertical;min-height:70px}
 .rules-panel .btn-save{padding:8px 20px;margin-top:14px;border:none;border-radius:var(--radius-sm);background:var(--accent-gradient);color:var(--bg-deep);font-family:var(--font-sans);font-size:13px;font-weight:600;cursor:pointer;transition:opacity .2s}
 .rules-panel .btn-save:hover{opacity:.9}
+
+/* Snapshot panel */
+.snap-list{display:flex;flex-direction:column;gap:10px}
+.snap-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px 16px;display:flex;align-items:center;gap:12px;transition:all .15s}
+.snap-card:hover{border-color:var(--accent-dim)}
+.snap-card .snap-info{flex:1;min-width:0}
+.snap-card .snap-name{font-size:14px;font-weight:600;color:var(--text-primary);margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.snap-card .snap-name .snap-badge{font-size:10px;padding:1px 6px;border-radius:4px;background:var(--accent-glow);color:var(--accent);font-weight:400}
+.snap-card .snap-meta{font-size:11px;color:var(--text-muted);display:flex;gap:12px;flex-wrap:wrap}
+.snap-card .snap-meta span{display:inline-flex;align-items:center;gap:3px}
+.snap-card .snap-actions{display:flex;gap:6px;flex-shrink:0}
+.snap-card .snap-actions button{padding:5px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:var(--font-sans);transition:all .15s;font-weight:500}
+.snap-card .snap-actions .snap-restore{background:var(--accent);color:var(--bg-deep);border:none}
+.snap-card .snap-actions .snap-restore:hover{background:var(--accent-dim)}
+.snap-card .snap-actions .snap-restore:disabled{opacity:.5;cursor:not-allowed}
+.snap-card .snap-actions .snap-delete{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
+.snap-card .snap-actions .snap-delete:hover{border-color:var(--danger);color:var(--danger)}
+.snap-card .snap-actions .snap-delete:disabled{opacity:.5;cursor:not-allowed}
+.snap-empty{text-align:center;padding:60px 20px;color:var(--text-muted)}
+.snap-empty .icon{font-size:40px;margin-bottom:16px}
+.snap-error{padding:14px;background:rgba(217,83,79,0.1);border:1px solid var(--danger);border-radius:var(--radius-sm);color:var(--danger);font-size:12px;margin-bottom:12px}
+.snap-create-row{display:flex;gap:8px;margin-bottom:16px}
+.snap-create-row input{flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--bg-elevated);color:var(--text-primary);font-family:var(--font-sans);font-size:13px;outline:none}
+.snap-create-row input:focus{border-color:var(--accent-dim)}
+.snap-create-row input::placeholder{color:var(--text-muted)}
+
+/* Export dropdown */
+.export-group{position:relative;display:inline-block}
+.export-dropdown{position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border-light);border-radius:var(--radius-sm);box-shadow:var(--shadow);min-width:120px;z-index:50;overflow:hidden;display:none}
+.export-dropdown.open{display:block;animation:ctx-fadein .12s ease-out}
+.export-dropdown button{display:block;width:100%;padding:8px 14px;border:none;background:transparent;color:var(--text-secondary);font-family:var(--font-sans);font-size:12px;text-align:left;cursor:pointer;transition:all .15s}
+.export-dropdown button:hover{background:var(--bg-hover);color:var(--accent)}
+.export-dropdown button .fmt-tag{float:right;color:var(--text-muted);font-size:10px;margin-left:8px}
+.export-caret{display:inline-block;margin-left:4px;font-size:9px;opacity:.7;transition:transform .2s}
+.export-group.open .export-caret{transform:rotate(180deg)}
 </style>
 </head>
 <body>
@@ -438,7 +588,14 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
   </div>
   <div class="header-r">
     <button class="btn-sm" onclick="backToGrid()">返回项目列表</button>
-    <button class="btn-sm" id="exportBtn" onclick="exportNovel('md')" style="display:none">导出</button>
+    <div class="export-group" id="exportGroup" style="display:none">
+      <button class="btn-sm" id="exportBtn" onclick="toggleExportDropdown(event)">导出<span class="export-caret">▼</span></button>
+      <div class="export-dropdown" id="exportDropdown">
+        <button onclick="exportNovel('md')">Markdown<span class="fmt-tag">.md</span></button>
+        <button onclick="exportNovel('html')">HTML<span class="fmt-tag">.html</span></button>
+        <button onclick="exportNovel('json')">JSON<span class="fmt-tag">.json</span></button>
+      </div>
+    </div>
   </div>
 </div>
 <button id="chatBtn" onclick="document.getElementById('chatPanel').style.display=document.getElementById('chatPanel').style.display==='flex'?'none':'flex'">💬</button>
@@ -462,6 +619,9 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
     </div>
     <div class="nav-item" data-panel="rules">
       <span class="icon">📏</span> 创作规则
+    </div>
+    <div class="nav-item" data-panel="snapshots">
+      <span class="icon">📦</span> 快照管理
     </div>
     <div class="nav-item" data-panel="foreshadow">
       <span class="icon">🔮</span> 伏笔看板
@@ -529,10 +689,10 @@ body{font-family:var(--font-sans);background:var(--bg-deep);color:var(--text-pri
 let sessionId = null, currentPanel = 'story', submitting = false, stateData = null;
 let panelContent = {};
 let hasInterrupt = false;
-const PANELS = ['story','characters','world','outline','editor','context','factledger','rules','foreshadow','statetable','timeline','style','references','usage','review','providers'];
+const PANELS = ['story','characters','world','outline','editor','context','factledger','rules','snapshots','foreshadow','statetable','timeline','style','references','usage','review','providers'];
 
 // Setup
-function showSetup(){submitting=false;sessionId=null;disconnectSSE();localStorage.removeItem('ws_session');document.getElementById('setupOverlay').style.display='flex';document.getElementById('workbench').style.display='none';document.getElementById('exportBtn').style.display='none';const b=document.getElementById('startBtn');if(b){b.disabled=false;b.textContent='开始创作 →'};loadProjects()}
+function showSetup(){submitting=false;sessionId=null;disconnectSSE();localStorage.removeItem('ws_session');document.getElementById('setupOverlay').style.display='flex';document.getElementById('workbench').style.display='none';var eg=document.getElementById('exportGroup');if(eg)eg.style.display='none';const b=document.getElementById('startBtn');if(b){b.disabled=false;b.textContent='开始创作 →'};loadProjects()}
 async function startSession(){
   const idea = document.getElementById('ideaInput').value;
   const platform = document.getElementById('platformInput').value;
@@ -633,7 +793,7 @@ async function resume(action,feedback){
     else if(d.interrupt&&d.interrupt.length>0){
       hasInterrupt=true;d.interrupt.forEach(m=>addChat('system',m));await refreshState();showActions(d.interrupt);setChatStatus('等待你的选择')
     }
-    else if(d.done){hasInterrupt=false;addChat('system','✅ 流程完成！');document.getElementById('exportBtn').style.display='inline';await refreshState();setChatStatus('已完成')}
+    else if(d.done){hasInterrupt=false;addChat('system','✅ 流程完成！');var eg=document.getElementById('exportGroup');if(eg)eg.style.display='inline-block';await refreshState();setChatStatus('已完成')}
     else{hasInterrupt=false}
   }catch(e){addChat('system','错误: '+e.message)}
   submitting=false;setBtnsDisabled(false)
@@ -677,7 +837,7 @@ renderAllPanels();updateTags();updateSteps()}catch(e){}}
 // Panel rendering
 function renderAllPanels(){
   if(!stateData)return;
-  renderStory();renderCharacters();renderWorld();renderOutline();renderEditor();renderContext();renderFactLedger();renderForeshadowPanel();renderStateTablePanel();renderTimeline();renderStyle();renderReferences();renderUsage();renderReview();renderRules()
+  renderStory();renderCharacters();renderWorld();renderOutline();renderEditor();renderContext();renderFactLedger();renderForeshadowPanel();renderStateTablePanel();renderTimeline();renderStyle();renderReferences();renderUsage();renderReview();renderRules();renderSnapshots()
   if(currentPanel==='prompts' && typeof renderPromptLibrary==='function') renderPromptLibrary();
 }
 function selectPanel(name){currentPanel=name;document.querySelectorAll('.nav-item').forEach(e=>e.classList.toggle('active',e.dataset.panel===name));renderAllPanels()}
@@ -1062,149 +1222,629 @@ function renderProgress(progress,remaining,counts){
 }
 
 // ── Phase 6: Timeline Panel ──
+let _timelineCache = [];
+let _timelineEditingId = null;
+let _timelineFormData = {description:'', chapter_num:0, story_time:'', event_type:'plot'};
+
+function _timelineHeader(){
+  return '<div class="panel-header"><h2>📅 故事年表</h2><div class="actions">'+
+    '<button class="btn" id="tl-extract-btn" onclick="extractTimeline()">⚡ 自动提取</button>'+
+    '<button class="btn primary" onclick="showTimelineForm()">添加事件</button>'+
+    '</div></div>';
+}
+
 async function renderTimeline(){
   if(currentPanel!=='timeline')return;
-  let h='<div class="panel-header"><h2>📅 故事年表</h2><div class="actions"><button class="btn primary" onclick="addTimelineEvent()">添加事件</button></div></div>';
-  h+='<div class="panel-body" id="tl-body"><div class="ctx-skeleton"></div></div>';
+  let h=_timelineHeader();
+  h+='<div class="panel-body" id="tl-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
   document.getElementById('centerPanel').innerHTML=h;
   try{
-    if(!v2ProjectId)return;
-    const r=await fetch('/api/timeline/'+v2ProjectId);const d=await r.json();
-    if(!d.ok)return;
-    const events=d.events||[];
-    let th='<div class="panel-header"><h2>📅 故事年表</h2><div class="actions"><button class="btn primary" onclick="addTimelineEvent()">添加事件</button></div></div>';
-    th+='<div class="panel-body"><div class="timeline-v">';
-    if(events.length===0){
-      th+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📅</div><div>暂无时间线事件</div><div style="font-size:12px;margin-top:8px">事件将在写作确认后自动从章节提取</div></div>';
-    }else{
-      for(const ev of events){
-        const colors={plot:'#d4a853',character:'#5cb85c',world:'#8b5cf6'};
-        const color=colors[ev.event_type]||'var(--text-muted)';
-        th+='<div class="tl-event" style="border-left:3px solid '+color+';padding:8px 12px;margin-bottom:10px;background:var(--bg-elevated);border-radius:0 var(--radius-sm) var(--radius-sm) 0;cursor:pointer" onclick="editTimelineEvent(\''+esc(ev.id)+'\',\''+esc(ev.description)+'\',\''+esc(ev.story_time||'')+'\','+ev.chapter_num+',\''+esc(ev.event_type)+'\')">';
-        th+='<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-weight:600;font-size:13px">'+esc(ev.story_time||'Ch'+ev.chapter_num)+'</span><span style="font-size:10px;color:var(--text-muted)">Ch'+ev.chapter_num+'</span></div>';
-        th+='<div style="font-size:12px;color:var(--text-secondary);margin-top:4px">'+esc(ev.description)+'</div>';
-        th+='<div style="margin-top:4px"><span style="font-size:10px;padding:1px 6px;border-radius:4px;background:'+color+'20;color:'+color+'">'+esc(ev.event_type)+'</span></div>';
-        th+='</div>';
-      }
+    if(!v2ProjectId){
+      // empty state when no project
+      const body=document.getElementById('tl-body');
+      if(body)body.innerHTML=_timelineEmptyState();
+      return;
     }
-    th+='</div></div>';
-    document.getElementById('centerPanel').innerHTML=th;
-  }catch(e){document.getElementById('tl-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+    const r=await fetch('/api/timeline/'+v2ProjectId);
+    const d=await r.json();
+    if(!d.ok)return;
+    _timelineCache=d.events||[];
+    renderTimelineContent();
+  }catch(e){
+    const body=document.getElementById('tl-body');
+    if(body)body.innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+esc(e.message)+'</p>';
+  }
 }
 
-async function addTimelineEvent(){
+function _timelineEmptyState(){
+  return '<div class="timeline-empty"><div class="icon">📅</div>'+
+    '<div>暂无时间线事件</div>'+
+    '<div class="hint">点击「自动提取」从已确认的章节中自动抽取事件<br>或点击「添加事件」手动创建</div></div>';
+}
+
+function renderTimelineContent(){
+  const events=_timelineCache||[];
+  let h=_timelineHeader();
+  h+='<div class="panel-body">';
+  if(_timelineEditingId==='new'){
+    h+=renderTimelineForm();
+  }
+  if(events.length===0){
+    h+=_timelineEmptyState();
+  }else{
+    h+='<div class="timeline-v">';
+    for(const ev of events){
+      const tp=ev.event_type||'plot';
+      const safeId=esc(ev.id);
+      h+='<div class="tl-event" data-id="'+safeId+'" style="border-left:3px solid '+_timelineBorderColor(tp)+'">';
+      h+='<div class="tl-head">';
+      h+='<span class="tl-time">'+esc(ev.story_time||('Ch'+ev.chapter_num))+'</span>';
+      h+='<span class="tl-chapter">第'+ev.chapter_num+'章</span>';
+      h+='</div>';
+      h+='<div class="tl-desc">'+esc(ev.description||'')+'</div>';
+      h+='<div class="tl-meta">';
+      h+='<span class="tl-type-pill '+tp+'">'+esc(_timelineTypeLabel(tp))+'</span>';
+      h+='<div class="tl-actions">';
+      h+='<button onclick="event.stopPropagation();showTimelineForm(\''+safeId+'\')">编辑</button>';
+      h+='<button class="danger" onclick="event.stopPropagation();deleteTimelineEvent(\''+safeId+'\')">删除</button>';
+      h+='</div></div></div>';
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+}
+
+function _timelineBorderColor(tp){
+  const colors={plot:'#d4a853',character:'#5cb85c',world:'#a78bfa'};
+  return colors[tp]||'var(--border)';
+}
+
+function _timelineTypeLabel(tp){
+  return {plot:'情节',character:'角色',world:'世界'}[tp]||tp;
+}
+
+function renderTimelineForm(){
+  const isNew=_timelineEditingId==='new';
+  const ev=isNew?_timelineFormData:(_timelineCache.find(e=>e.id===_timelineEditingId)||{});
+  let h='<div class="ctx-card fade-in" style="margin-bottom:14px;border-color:var(--accent)">';
+  h+='<h3>'+(isNew?'➕ 添加事件':'✎ 编辑事件')+'</h3>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>章节号</label>';
+  h+='<input type="number" id="tl-form-ch" min="0" value="'+(ev.chapter_num||0)+'" placeholder="如 1">';
+  h+='</div><div class="form-col">';
+  h+='<label>时间标记（如 第3天 / 盛夏）</label>';
+  h+='<input type="text" id="tl-form-time" value="'+esc(ev.story_time||'')+'" placeholder="故事内的时间标记">';
+  h+='</div></div>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>事件描述 *</label>';
+  h+='<textarea id="tl-form-desc" rows="2" placeholder="发生了什么？">'+esc(ev.description||'')+'</textarea>';
+  h+='</div><div class="form-col small">';
+  h+='<label>类型（情节重要性）</label>';
+  h+='<select id="tl-form-type"><option value="plot"'+(ev.event_type==='plot'?' selected':'')+'>plot 情节</option><option value="character"'+(ev.event_type==='character'?' selected':'')+'>character 角色</option><option value="world"'+(ev.event_type==='world'?' selected':'')+'>world 世界</option></select>';
+  h+='</div></div>';
+  h+='<div class="ref-form-actions">';
+  h+='<button class="btn" onclick="cancelTimelineForm()">取消</button>';
+  h+='<button class="btn primary" onclick="'+(isNew?'saveTimelineEvent()':'updateTimelineEvent()')+'">'+(isNew?'添加':'保存')+'</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function showTimelineForm(id){
+  if(id){
+    _timelineEditingId=id;
+    const ev=_timelineCache.find(e=>e.id===id);
+    _timelineFormData=ev?{description:ev.description,chapter_num:ev.chapter_num,story_time:ev.story_time,event_type:ev.event_type}:{description:'',chapter_num:0,story_time:'',event_type:'plot'};
+  }else{
+    _timelineEditingId='new';
+    _timelineFormData={description:'',chapter_num:0,story_time:'',event_type:'plot'};
+  }
+  renderTimelineContent();
+}
+
+function cancelTimelineForm(){
+  _timelineEditingId=null;
+  _timelineFormData={description:'',chapter_num:0,story_time:'',event_type:'plot'};
+  renderTimelineContent();
+}
+
+async function saveTimelineEvent(){
+  const desc=document.getElementById('tl-form-desc')?.value.trim();
+  if(!desc){addChat('system','⚠️ 事件描述不能为空');return}
   if(!v2ProjectId)return;
-  const desc=prompt('事件描述:');if(!desc||!desc.trim())return;
-  const st=prompt('故事内时间（如"第3天"、"盛夏"）:','')||'';
-  const ch=parseInt(prompt('章节号:','0'))||0;
-  const tp=prompt('类型 (plot/character/world):','plot')||'plot';
+  const payload={
+    description:desc,
+    chapter_num:parseInt(document.getElementById('tl-form-ch')?.value)||0,
+    story_time:document.getElementById('tl-form-time')?.value||'',
+    event_type:document.getElementById('tl-form-type')?.value||'plot',
+  };
   try{
-    const r=await fetch('/api/timeline/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:desc.trim(),story_time:st,chapter_num:ch,event_type:tp})});
-    const d=await r.json();if(d.ok){addChat('system','✅ 事件已添加');renderTimeline()}
-  }catch(e){addChat('system','添加失败: '+e.message)}
+    const r=await fetch('/api/timeline/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 事件已添加');
+      _timelineEditingId=null;
+      await renderTimeline();
+    }else{
+      addChat('system','❌ 添加失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 添加失败: '+e.message)}
 }
 
-async function editTimelineEvent(id,desc,st,ch,tp){
-  const nd=prompt('描述:',desc);if(!nd||!nd.trim())return;
-  const ns=prompt('时间:',st)||st;
-  const nc=parseInt(prompt('章节:',String(ch)))||ch;
-  const nt=prompt('类型:',tp)||tp;
+async function updateTimelineEvent(){
+  if(!v2ProjectId||!_timelineEditingId||_timelineEditingId==='new')return;
+  const desc=document.getElementById('tl-form-desc')?.value.trim();
+  if(!desc){addChat('system','⚠️ 事件描述不能为空');return}
+  const payload={
+    description:desc,
+    chapter_num:parseInt(document.getElementById('tl-form-ch')?.value)||0,
+    story_time:document.getElementById('tl-form-time')?.value||'',
+    event_type:document.getElementById('tl-form-type')?.value||'plot',
+  };
   try{
-    const r=await fetch('/api/timeline/'+v2ProjectId+'/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({description:nd.trim(),story_time:ns,chapter_num:nc,event_type:nt})});
-    const d=await r.json();if(d.ok){addChat('system','✅ 事件已更新');renderTimeline()}
-  }catch(e){addChat('system','更新失败: '+e.message)}
+    const r=await fetch('/api/timeline/'+v2ProjectId+'/'+_timelineEditingId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 事件已更新');
+      _timelineEditingId=null;
+      await renderTimeline();
+    }else{
+      addChat('system','❌ 更新失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 更新失败: '+e.message)}
 }
+
+async function deleteTimelineEvent(id){
+  if(!v2ProjectId||!id)return;
+  if(!confirm('确定要删除这个时间线事件？此操作不可撤销。'))return;
+  try{
+    const r=await fetch('/api/timeline/'+v2ProjectId+'/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 事件已删除');
+      await renderTimeline();
+    }else{
+      addChat('system','❌ 删除失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 删除失败: '+e.message)}
+}
+
+async function extractTimeline(){
+  if(!v2ProjectId){
+    addChat('system','⚠️ 请先打开一个项目');
+    return;
+  }
+  const btn=document.getElementById('tl-extract-btn');
+  if(btn){btn.disabled=true;btn.textContent='提取中...'}
+  addChat('system','⏳ 正在从已确认章节中自动提取时间线事件...');
+  try{
+    const r=await fetch('/api/timeline/'+v2ProjectId+'/extract',{method:'POST'});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 提取完成，新增 '+d.extracted+' 个事件（共处理 '+d.chapters_processed+' 章）');
+      await renderTimeline();
+    }else{
+      addChat('system','❌ 提取失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 提取失败: '+e.message)}
+  finally{
+    if(btn){btn.disabled=false;btn.textContent='⚡ 自动提取'}
+  }
+}
+
+// 兼容旧调用（保留以防外部代码引用）
+async function addTimelineEvent(){showTimelineForm()}
+async function editTimelineEvent(id,desc,st,ch,tp){showTimelineForm(id)}
 
 // ── Phase 6: Style Panel ──
+let _styleCache = null;
+
+function _styleHeader(){
+  const cc=_styleCache?.chapter_count||0;
+  return '<div class="panel-header"><h2>🎨 文风画像</h2><div class="actions">'+
+    '<button class="btn" id="style-refresh-btn" onclick="renderStyle()">刷新</button>'+
+    '<button class="btn primary" id="style-analyze-btn" onclick="analyzeStyle()">🔄 重新分析</button>'+
+    '<span style="font-size:11px;color:var(--text-muted);margin-left:4px">'+cc+'章样本</span>'+
+    '</div></div>';
+}
+
 async function renderStyle(){
   if(currentPanel!=='style')return;
-  let h='<div class="panel-header"><h2>🎨 文风画像</h2><div class="actions"><button class="btn" onclick="renderStyle()">刷新</button></div></div>';
+  let h=_styleHeader();
   h+='<div class="panel-body" id="style-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
   document.getElementById('centerPanel').innerHTML=h;
   try{
-    if(!v2ProjectId)return;
-    const r=await fetch('/api/style/'+v2ProjectId);const d=await r.json();
-    if(!d.ok)return;
-    const p=d.profile||{};
-    let sh='<div class="panel-header"><h2>🎨 文风画像</h2><div class="actions"><span style="font-size:11px;color:var(--text-muted)">'+(p.chapter_count||0)+'章样本</span></div></div>';
-    sh+='<div class="panel-body">';
-    if(!p.chapter_count||p.chapter_count===0){
-      sh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">🎨</div><div>暂无文风数据</div><div style="font-size:12px;margin-top:8px">确认章节后将自动分析文风特征</div></div>';
-    }else{
-      const sl=p.sentence_lengths||{};
-      sh+='<div class="ctx-card fade-in"><h3>📏 句子长度</h3>';
-      sh+='<div style="display:flex;gap:16px"><div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--accent)">'+(sl.avg||0)+'</div><div style="font-size:11px;color:var(--text-muted)">平均</div></div>';
-      sh+='<div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--success)">'+(sl.min||0)+'</div><div style="font-size:11px;color:var(--text-muted)">最短</div></div>';
-      sh+='<div style="flex:1;text-align:center;padding:12px;background:var(--bg-deep);border-radius:8px"><div style="font-size:24px;font-weight:700;color:var(--danger)">'+(sl.max||0)+'</div><div style="font-size:11px;color:var(--text-muted)">最长</div></div></div></div>';
-
-      // Bar charts (CSS-based)
-      sh+='<div class="ctx-card fade-in"><h3>📊 对话与描述比例</h3>';
-      const dlgPct=Math.round((p.dialogue_ratio||0)*100);
-      const descPct=Math.round((p.description_density||0)*100);
-      sh+='<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>对话占比</span><span>'+dlgPct+'%</span></div><div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+dlgPct+'%;background:var(--accent-gradient);border-radius:6px;transition:width .4s"></div></div></div>';
-      sh+='<div style="margin:8px 0"><div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-bottom:4px"><span>描述段落占比</span><span>'+descPct+'%</span></div><div style="height:12px;background:var(--border);border-radius:6px;overflow:hidden"><div style="height:100%;width:'+descPct+'%;background:linear-gradient(135deg,#5cb85c,#4a9a4a);border-radius:6px;transition:width .4s"></div></div></div>';
-
-      sh+='<div style="margin:8px 0;display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-deep);border-radius:6px"><span style="font-size:11px;color:var(--text-muted)">平均段落长度</span><span style="font-weight:600;font-size:13px">'+(p.avg_paragraph_length||0)+'字</span></div></div>';
-
-      // Word frequency
-      const wf=p.word_frequency||[];
-      if(wf.length>0){
-        sh+='<div class="ctx-card fade-in"><h3>🔤 高频词汇 Top 20</h3><div style="display:flex;flex-wrap:wrap;gap:6px">';
-        wf.slice(0,20).forEach(w=>{
-          const maxFreq=wf[0]?wf[0][1]:1;const pct=Math.max(10,Math.round((w[1]/maxFreq)*100));
-          sh+='<span style="padding:3px 8px;background:var(--bg-deep);border-radius:100px;font-size:11px;opacity:'+(0.4+pct/160)+'">'+esc(w[0])+' <span style="color:var(--text-muted)">'+w[1]+'</span></span>';
-        });
-        sh+='</div></div>';
-      }
-
-      sh+='<div style="text-align:center;color:var(--text-muted);font-size:10px;margin-top:12px">样本：'+p.chapter_count+'章 '+(p.sample_size_chars||0)+'字</div>';
+    if(!v2ProjectId){
+      const body=document.getElementById('style-body');
+      if(body)body.innerHTML=_styleEmptyState();
+      return;
     }
-    sh+='</div>';
-    document.getElementById('centerPanel').innerHTML=sh;
-  }catch(e){document.getElementById('style-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+    const r=await fetch('/api/style/'+v2ProjectId);
+    const d=await r.json();
+    if(!d.ok)return;
+    _styleCache=d.profile||{};
+    renderStyleContent();
+  }catch(e){
+    const body=document.getElementById('style-body');
+    if(body)body.innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+esc(e.message)+'</p>';
+  }
+}
+
+function _styleEmptyState(){
+  return '<div class="style-empty"><div class="icon">🎨</div>'+
+    '<div>暂无文风数据</div>'+
+    '<div class="hint">需要先确认至少一个章节的内容<br>文风数据会自动从已确认章节中提取统计</div></div>';
+}
+
+function renderStyleContent(){
+  const p=_styleCache||{};
+  let h=_styleHeader();
+  h+='<div class="panel-body">';
+  if(!p.chapter_count||p.chapter_count===0){
+    h+=_styleEmptyState();
+  }else{
+    const sl=p.sentence_lengths||{};
+
+    // Stats cards
+    h+='<div class="style-stats-grid">';
+    h+='<div class="style-stat"><div class="stat-label">平均句长</div><div class="stat-value">'+(sl.avg||0)+'</div><div class="stat-unit">字/句</div></div>';
+    h+='<div class="style-stat"><div class="stat-label">对话比例</div><div class="stat-value">'+Math.round((p.dialogue_ratio||0)*100)+'</div><div class="stat-unit">%</div></div>';
+    h+='<div class="style-stat"><div class="stat-label">描述密度</div><div class="stat-value">'+Math.round((p.description_density||0)*100)+'</div><div class="stat-unit">%</div></div>';
+    h+='<div class="style-stat"><div class="stat-label">章节数</div><div class="stat-value">'+(p.chapter_count||0)+'</div><div class="stat-unit">章</div></div>';
+    h+='</div>';
+
+    // Detailed bars
+    h+='<div class="ctx-card fade-in"><h3>📊 文风比例</h3>';
+    const dlgPct=Math.round((p.dialogue_ratio||0)*100);
+    const descPct=Math.round((p.description_density||0)*100);
+    h+='<div class="style-bar-group"><div class="bar-head"><span>对话占比</span><strong>'+dlgPct+'%</strong></div><div class="style-bar-track"><div class="style-bar-fill dialogue" style="width:'+dlgPct+'%"></div></div></div>';
+    h+='<div class="style-bar-group"><div class="bar-head"><span>描述段落占比</span><strong>'+descPct+'%</strong></div><div class="style-bar-track"><div class="style-bar-fill description" style="width:'+descPct+'%"></div></div></div>';
+    h+='<div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-deep);border-radius:6px;margin-top:10px"><span style="font-size:11px;color:var(--text-muted)">平均段落长度</span><span style="font-weight:600;font-size:13px">'+(p.avg_paragraph_length||0)+'字</span></div>';
+    if(sl.max||sl.min){
+      h+='<div style="display:flex;justify-content:space-between;padding:6px 12px;background:var(--bg-deep);border-radius:6px;margin-top:6px;font-size:12px"><span style="color:var(--text-muted)">句长范围</span><span style="color:var(--text-secondary)">'+(sl.min||0)+' ~ '+(sl.max||0)+' 字</span></div>';
+    }
+    h+='</div>';
+
+    // Top 10 words
+    const wf=p.word_frequency||[];
+    if(wf.length>0){
+      h+='<div class="ctx-card fade-in"><h3>🔤 高频词汇 Top 10</h3><div class="style-words">';
+      wf.slice(0,10).forEach(function(w){
+        const maxFreq=wf[0]?wf[0][1]:1;
+        const pct=Math.max(10,Math.round((w[1]/maxFreq)*100));
+        h+='<span class="style-word" style="opacity:'+(0.5+pct/200)+'">'+esc(w[0])+'<span class="count">'+w[1]+'</span></span>';
+      });
+      h+='</div></div>';
+    }
+
+    h+='<div class="style-meta-line">样本：'+p.chapter_count+'章 · '+(p.sample_size_chars||0)+'字</div>';
+  }
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+}
+
+async function analyzeStyle(){
+  if(!v2ProjectId){
+    addChat('system','⚠️ 请先打开一个项目');
+    return;
+  }
+  const btn=document.getElementById('style-analyze-btn');
+  if(btn){btn.disabled=true;btn.textContent='分析中...'}
+  addChat('system','⏳ 正在重新分析文风...');
+  try{
+    const r=await fetch('/api/style/'+v2ProjectId+'/analyze',{method:'POST'});
+    const d=await r.json();
+    if(d.ok){
+      _styleCache=d.profile||{};
+      addChat('system','✅ 文风分析完成（分析 '+(d.chapters_analyzed||0)+' 章）');
+      renderStyleContent();
+    }else{
+      addChat('system','❌ 分析失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 分析失败: '+e.message)}
+  finally{
+    if(btn){btn.disabled=false;btn.textContent='🔄 重新分析'}
+  }
 }
 
 // ── Phase 6: References Panel ──
+let _referencesCache = [];
+let _refEditingId = null;     // null | 'new' | ref_id
+let _refFormData = {title:'', ref_type:'note', tags:[], content:'', source_url:''};
+let _refSearchQuery = '';
+let _refTagInput = '';
+
+const REF_TYPE_LABELS = {
+  setting: '🌍 世界观', worldbuilding: '🌍 世界观',
+  character: '👤 角色',
+  plot: '📖 情节',
+  research: '🔬 研究',
+  note: '📝 笔记'
+};
+
+function _referencesHeader(){
+  return '<div class="panel-header"><h2>📚 参考资料</h2><div class="actions">'+
+    '<button class="btn" onclick="showImportDlg()">📥 导入文档</button>'+
+    '<button class="btn primary" onclick="showReferenceForm()">添加参考资料</button>'+
+    '</div></div>';
+}
+
 async function renderReferences(){
   if(currentPanel!=='references')return;
-  let h='<div class="panel-header"><h2>📚 参考资料</h2><div class="actions"><button class="btn primary" onclick="addReference()">添加资料</button><button class="btn" onclick="showImportDlg()">📥 导入文档</button><input id="refSearch" placeholder="搜索..." style="width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-size:11px;font-family:var(--font-sans)" oninput="renderReferences()"></div></div>';
-  h+='<div class="panel-body" id="ref-body"><div class="ctx-skeleton"></div></div>';
+  let h=_referencesHeader();
+  h+='<div class="panel-body" id="ref-body">';
+  h+='<div class="ctx-skeleton"></div></div>';
   document.getElementById('centerPanel').innerHTML=h;
   try{
-    if(!v2ProjectId)return;
-    const q=document.getElementById('refSearch')?document.getElementById('refSearch').value:'';
-    const url='/api/references/'+v2ProjectId+(q?'?query='+encodeURIComponent(q):'');
-    const r=await fetch(url);const d=await r.json();
-    if(!d.ok)return;
-    const refs=d.references||[];
-    const types={setting:'🌍 世界观',character:'👤 角色',plot:'📖 情节',research:'🔬 研究',note:'📝 笔记'};
-    let rh='<div class="panel-header"><h2>📚 参考资料</h2><div class="actions"><button class="btn primary" onclick="addReference()">添加资料</button><button class="btn" onclick="showImportDlg()">📥 导入文档</button><input id="refSearch" value="'+esc(q)+'" placeholder="搜索..." style="width:120px;padding:4px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg-elevated);color:var(--text-primary);font-size:11px;font-family:var(--font-sans)" oninput="renderReferences()"></div></div>';
-    rh+='<div class="panel-body"><div id="importDropZone" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:16px;text-align:center;color:var(--text-muted);font-size:12px;margin-bottom:16px;cursor:pointer;transition:all .15s" ondrop="handleImportDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'var(--border)\'">拖放文件到此处导入 (.md .txt .docx)<br><span style="font-size:11px">或点击上方「导入文档」按钮</span></div>';
-    if(refs.length===0){
-      rh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📚</div><div>暂无参考资料</div></div>';
-    }else{
-      // Tag filter buttons
-      const allTags=new Set();refs.forEach(r=>{(r.tags||[]).forEach(t=>allTags.add(t))});
-      if(allTags.size>0){
-        rh+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">';
-        Array.from(allTags).forEach(t=>rh+='<button style="font-size:10px;padding:2px 8px;border:1px solid var(--border);border-radius:100px;background:transparent;color:var(--text-muted);cursor:pointer;font-family:var(--font-sans)" onclick="document.getElementById(\'refSearch\').value=\''+esc(t)+'\';renderReferences()">'+esc(t)+'</button>');
-        rh+='</div>';
-      }
-      for(const ref of refs){
-        rh+='<div class="ctx-card fade-in" style="cursor:pointer" onclick="editReference(\''+esc(ref.id)+'\',\''+esc(ref.title||'')+'\',\''+esc(ref.ref_type)+'\')">';
-        rh+='<h3>'+esc(types[ref.ref_type]||'📝')+' '+esc(ref.title)+'<span class="ctx-sub">'+timeAgo(ref.created_at)+'</span></h3>';
-        rh+='<div class="ctx-body">'+esc((ref.content||'').slice(0,150))+'</div>';
-        if(ref.tags&&ref.tags.length>0){
-          rh+='<div style="margin-top:6px">';
-          ref.tags.forEach(t=>rh+='<span style="font-size:10px;padding:1px 6px;border-radius:4px;background:var(--bg-hover);color:var(--text-muted);margin-right:4px">'+esc(t)+'</span>');
-          rh+='</div>';
-        }
-        rh+='</div>';
-      }
+    if(!v2ProjectId){
+      const body=document.getElementById('ref-body');
+      if(body)body.innerHTML=_refEmptyState();
+      return;
     }
-    rh+='</div>';
-    document.getElementById('centerPanel').innerHTML=rh;
-  }catch(e){document.getElementById('ref-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+    const q=_refSearchQuery||'';
+    const url='/api/references/'+v2ProjectId+(q?'?query='+encodeURIComponent(q):'');
+    const r=await fetch(url);
+    const d=await r.json();
+    if(!d.ok)return;
+    _referencesCache=d.references||[];
+    renderReferencesContent();
+  }catch(e){
+    const body=document.getElementById('ref-body');
+    if(body)body.innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+esc(e.message)+'</p>';
+  }
+}
+
+function _refEmptyState(){
+  return '<div class="ref-empty"><div class="icon">📚</div>'+
+    '<div>暂无参考资料</div>'+
+    '<div class="hint">点击「添加参考资料」手动创建<br>或使用「导入文档」从 .md / .txt / .docx 文件中提取</div></div>';
+}
+
+function renderReferencesContent(){
+  const refs=_referencesCache||[];
+  let h=_referencesHeader();
+  h+='<div class="panel-body">';
+
+  // Search row
+  h+='<div class="ref-search-row">';
+  h+='<input id="refSearch" class="search-input" type="text" placeholder="搜索标题、内容、标签..." value="'+esc(_refSearchQuery)+'" oninput="onRefSearchInput(this.value)">';
+  if(_refSearchQuery){
+    h+='<button class="btn" onclick="clearRefSearch()">清除</button>';
+  }
+  h+='</div>';
+
+  // Add/Edit form
+  if(_refEditingId){
+    h+=renderReferenceForm();
+  }
+
+  // Import drop zone (compact)
+  h+='<div id="importDropZone" style="border:2px dashed var(--border);border-radius:var(--radius-md);padding:10px;text-align:center;color:var(--text-muted);font-size:11px;margin-bottom:14px;cursor:pointer;transition:all .15s" ondrop="handleImportDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--accent)\'" ondragleave="this.style.borderColor=\'var(--border)\'">拖放 .md / .txt / .docx 文件到此处导入</div>';
+
+  if(refs.length===0){
+    h+=_refEmptyState();
+  }else{
+    // Collect all unique tags
+    const allTags=new Set();
+    refs.forEach(function(r){(r.tags||[]).forEach(function(t){allTags.add(t);});});
+    if(allTags.size>0){
+      h+='<div class="usage-section-title" style="margin-top:0">标签</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px">';
+      Array.from(allTags).forEach(function(t){
+        const active=_refSearchQuery===t;
+        h+='<button onclick="filterByTag(\''+esc(t)+'\')" style="font-size:10px;padding:3px 10px;border:1px solid '+(active?'var(--accent)':'var(--border)')+';border-radius:100px;background:'+(active?'var(--accent-glow)':'transparent')+';color:'+(active?'var(--accent)':'var(--text-muted)')+';cursor:pointer;font-family:var(--font-sans);transition:all .15s">'+esc(t)+'</button>';
+      });
+      h+='</div>';
+    }
+
+    for(const ref of refs){
+      const tp=ref.ref_type||'note';
+      const safeId=esc(ref.id);
+      const typeLabel=REF_TYPE_LABELS[tp]||('📝 '+tp);
+      h+='<div class="ref-card fade-in" onclick="showReferenceForm(\''+safeId+'\')">';
+      h+='<div class="ref-head">';
+      h+='<div class="ref-title">'+esc(typeLabel)+' '+esc(ref.title||'(无标题)')+'</div>';
+      h+='<div class="ref-time">'+timeAgo(ref.created_at)+'</div>';
+      h+='</div>';
+      if(ref.content){
+        h+='<div class="ref-preview">'+esc((ref.content||'').slice(0,180))+(ref.content.length>180?'...':'')+'</div>';
+      }
+      h+='<div class="ref-footer">';
+      h+='<div class="ref-tags">';
+      h+='<span class="ref-type-pill '+tp+'">'+esc(tp)+'</span>';
+      (ref.tags||[]).forEach(function(t){
+        h+='<span class="ref-tag" onclick="event.stopPropagation();filterByTag(\''+esc(t)+'\')">#'+esc(t)+'</span>';
+      });
+      h+='</div>';
+      if(ref.source_url){
+        h+='<div class="ref-source" title="'+esc(ref.source_url)+'">🔗 <a href="'+esc(ref.source_url)+'" target="_blank" rel="noopener" onclick="event.stopPropagation()">'+esc(ref.source_url.replace(/^https?:\/\//,''))+'</a></div>';
+      }
+      h+='</div></div>';
+    }
+  }
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  // Re-focus tag input if open
+  if(_refEditingId){
+    const tagInp=document.getElementById('ref-tag-input');
+    if(tagInp)tagInp.focus();
+  }
+}
+
+let _refSearchTimer = null;
+function onRefSearchInput(val){
+  _refSearchQuery=val;
+  if(_refSearchTimer)clearTimeout(_refSearchTimer);
+  _refSearchTimer=setTimeout(function(){renderReferences();},250);
+}
+
+function clearRefSearch(){
+  _refSearchQuery='';
+  renderReferences();
+}
+
+function filterByTag(tag){
+  _refSearchQuery=tag;
+  renderReferences();
+}
+
+function renderReferenceForm(){
+  const isNew=_refEditingId==='new';
+  const ev=isNew?_refFormData:(_referencesCache.find(function(r){return r.id===_refEditingId;})||_refFormData);
+  const safeId=esc(_refEditingId||'');
+  const cur={title:ev.title||'',ref_type:ev.ref_type||'note',tags:ev.tags||[],content:ev.content||'',source_url:ev.source_url||''};
+
+  let h='<div class="ctx-card fade-in" style="margin-bottom:14px;border-color:var(--accent)">';
+  h+='<h3>'+(isNew?'➕ 添加参考资料':'✎ 编辑参考资料')+'</h3>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>标题 *</label>';
+  h+='<input type="text" id="ref-form-title" value="'+esc(cur.title)+'" placeholder="资料标题">';
+  h+='</div><div class="form-col small">';
+  h+='<label>类型</label>';
+  h+='<select id="ref-form-type">';
+  ['note','worldbuilding','character','plot','research','setting'].forEach(function(t){
+    h+='<option value="'+t+'"'+(cur.ref_type===t?' selected':'')+'>'+t+'</option>';
+  });
+  h+='</select></div></div>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>标签（输入后回车添加）</label>';
+  h+='<div class="ref-tag-list" id="ref-tag-list">';
+  (cur.tags||[]).forEach(function(t,i){
+    h+='<span class="ref-tag-chip">'+esc(t)+'<span class="x" onclick="removeRefTag('+i+')">&times;</span></span>';
+  });
+  h+='<input type="text" id="ref-tag-input" placeholder="输入标签后回车..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();addRefTag()}">';
+  h+='</div></div></div>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>来源 URL（可选）</label>';
+  h+='<input type="url" id="ref-form-url" value="'+esc(cur.source_url)+'" placeholder="https://...">';
+  h+='</div></div>';
+  h+='<div class="ref-form-row"><div class="form-col">';
+  h+='<label>内容</label>';
+  h+='<textarea id="ref-form-content" rows="4" placeholder="资料内容...">'+esc(cur.content)+'</textarea>';
+  h+='</div></div>';
+  h+='<div class="ref-form-actions">';
+  if(!isNew){
+    h+='<button class="btn danger" onclick="deleteReference(\''+safeId+'\')" style="margin-right:auto">删除</button>';
+  }
+  h+='<button class="btn" onclick="cancelReferenceForm()">取消</button>';
+  h+='<button class="btn primary" onclick="'+(isNew?'saveReference()':'updateReference()')+'">'+(isNew?'添加':'保存')+'</button>';
+  h+='</div></div>';
+  return h;
+}
+
+function addRefTag(){
+  const inp=document.getElementById('ref-tag-input');
+  if(!inp)return;
+  const val=inp.value.trim();
+  if(!val)return;
+  // Get current ref
+  const ev=_refEditingId==='new'?_refFormData:(_referencesCache.find(function(r){return r.id===_refEditingId;})||_refFormData);
+  if(!ev.tags)ev.tags=[];
+  if(ev.tags.indexOf(val)===-1)ev.tags.push(val);
+  // Update form data
+  if(_refEditingId==='new')_refFormData=ev;
+  inp.value='';
+  renderReferencesContent();
+}
+
+function removeRefTag(idx){
+  const ev=_refEditingId==='new'?_refFormData:(_referencesCache.find(function(r){return r.id===_refEditingId;})||_refFormData);
+  if(ev.tags&&ev.tags.length>idx){
+    ev.tags.splice(idx,1);
+  }
+  if(_refEditingId==='new')_refFormData=ev;
+  renderReferencesContent();
+}
+
+function showReferenceForm(id){
+  if(id){
+    _refEditingId=id;
+    const ev=_referencesCache.find(function(r){return r.id===id;});
+    if(ev){
+      _refFormData={title:ev.title,ref_type:ev.ref_type,tags:(ev.tags||[]).slice(),content:ev.content,source_url:ev.source_url||''};
+    }
+  }else{
+    _refEditingId='new';
+    _refFormData={title:'',ref_type:'note',tags:[],content:'',source_url:''};
+  }
+  renderReferencesContent();
+}
+
+function cancelReferenceForm(){
+  _refEditingId=null;
+  _refFormData={title:'',ref_type:'note',tags:[],content:'',source_url:''};
+  renderReferencesContent();
+}
+
+function _readRefForm(){
+  const ev=_refEditingId==='new'?{tags:[]}:(_referencesCache.find(function(r){return r.id===_refEditingId;})||{tags:[]});
+  // Pull tags from chip DOM (in case the user just typed and didn't press enter)
+  const chips=document.querySelectorAll('#ref-tag-list .ref-tag-chip');
+  const tags=Array.from(chips).map(function(c){
+    return c.textContent.replace('×','').trim();
+  });
+  // Also add the current input value if non-empty
+  const inpVal=document.getElementById('ref-tag-input')?.value.trim();
+  if(inpVal&&tags.indexOf(inpVal)===-1)tags.push(inpVal);
+  return {
+    title:(document.getElementById('ref-form-title')?.value||'').trim(),
+    ref_type:document.getElementById('ref-form-type')?.value||'note',
+    tags:tags,
+    content:document.getElementById('ref-form-content')?.value||'',
+    source_url:(document.getElementById('ref-form-url')?.value||'').trim(),
+  };
+}
+
+async function saveReference(){
+  if(!v2ProjectId)return;
+  const data=_readRefForm();
+  if(!data.title){addChat('system','⚠️ 标题不能为空');return}
+  try{
+    const r=await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 资料已添加');
+      _refEditingId=null;
+      _refFormData={title:'',ref_type:'note',tags:[],content:'',source_url:''};
+      await renderReferences();
+    }else{
+      addChat('system','❌ 添加失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 添加失败: '+e.message)}
+}
+
+async function updateReference(){
+  if(!v2ProjectId||!_refEditingId||_refEditingId==='new')return;
+  const data=_readRefForm();
+  if(!data.title){addChat('system','⚠️ 标题不能为空');return}
+  try{
+    const r=await fetch('/api/references/'+v2ProjectId+'/'+_refEditingId,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 资料已更新');
+      _refEditingId=null;
+      _refFormData={title:'',ref_type:'note',tags:[],content:'',source_url:''};
+      await renderReferences();
+    }else{
+      addChat('system','❌ 更新失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 更新失败: '+e.message)}
+}
+
+async function deleteReference(id){
+  if(!v2ProjectId||!id)return;
+  if(!confirm('确定要删除这个参考资料？此操作不可撤销。'))return;
+  try{
+    const r=await fetch('/api/references/'+v2ProjectId+'/'+id,{method:'DELETE'});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 资料已删除');
+      _refEditingId=null;
+      await renderReferences();
+    }else{
+      addChat('system','❌ 删除失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){addChat('system','❌ 删除失败: '+e.message)}
 }
 
 function showImportDlg(){
@@ -1218,20 +1858,15 @@ function showImportDlg(){
       const d=await r.json();
       if(d.ok){
         const sections=d.sections||[];
-        addChat('system','导入完成：'+sections.length+'个章节，'+d.word_count+'字。导入为参考资料？');
-        // Show import preview
-        let preview='导入预览 ('+d.file_name+'):\n';
-        sections.slice(0,5).forEach(s=>preview+='\n📄 '+s.title+': '+esc((s.content||'').slice(0,60))+'...');
-        if(sections.length>5)preview+='\n... 还有'+(sections.length-5)+'节';
-        addChat('system',preview);
+        addChat('system','导入完成：'+sections.length+'个章节，'+d.word_count+'字。已自动保存为参考资料。');
         // Auto-save first 5 sections as references
         for(let i=0;i<Math.min(sections.length,5);i++){
           const s=sections[i];
           try{
-            await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,content:s.content.slice(0,2000),ref_type:s.type||'note',tags:['imported']})});
+            await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,content:(s.content||'').slice(0,2000),ref_type:s.type||'note',tags:['imported'],source_url:''})});
           }catch(e){}
         }
-        renderReferences();
+        await renderReferences();
       }else{
         addChat('system','导入失败: '+(d.error||'未知错误'));
       }
@@ -1245,91 +1880,153 @@ function handleImportDrop(e){
   const file=e.dataTransfer.files[0];if(!file||!v2ProjectId)return;
   addChat('system','正在导入 '+file.name+'...');
   const fd=new FormData();fd.append('file',file);
-  fetch('/api/import/'+v2ProjectId,{method:'POST',body:fd}).then(r=>r.json()).then(d=>{
-    if(d.ok){addChat('system','导入完成：'+d.sections.length+'个章节');renderReferences()}else{addChat('system','导入失败')}
-  }).catch(e=>addChat('system','导入错误: '+e.message));
+  fetch('/api/import/'+v2ProjectId,{method:'POST',body:fd}).then(function(r){return r.json();}).then(async function(d){
+    if(d.ok){
+      addChat('system','导入完成：'+d.sections.length+'个章节');
+      for(let i=0;i<Math.min(d.sections.length,5);i++){
+        const s=d.sections[i];
+        try{
+          await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:s.title,content:(s.content||'').slice(0,2000),ref_type:s.type||'note',tags:['imported'],source_url:''})});
+        }catch(_){}
+      }
+      await renderReferences();
+    }else{
+      addChat('system','导入失败');
+    }
+  }).catch(function(e){addChat('system','导入错误: '+e.message);});
 }
 
-async function addReference(){
-  if(!v2ProjectId)return;
-  const title=prompt('资料标题:');if(!title||!title.trim())return;
-  const tp=prompt('类型 (setting/character/plot/research/note):','note')||'note';
-  const tags=prompt('标签（逗号分隔）:','')||'';
-  const content=prompt('内容（可选）:','')||'';
-  try{
-    const r=await fetch('/api/references/'+v2ProjectId,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:title.trim(),ref_type:tp,tags:tags.split(',').map(t=>t.trim()).filter(Boolean),content:content})});
-    const d=await r.json();if(d.ok){addChat('system','✅ 资料已添加');renderReferences()}
-  }catch(e){addChat('system','添加失败: '+e.message)}
-}
-
-async function editReference(id,title,tp){
-  if(!v2ProjectId)return;
-  const action=prompt('操作: 1=编辑 2=删除','1');
-  if(action==='2'){
-    if(!confirm('确定删除？'))return;
-    try{await fetch('/api/references/'+v2ProjectId+'/'+id,{method:'DELETE'});renderReferences()}catch(e){}
-    return;
-  }
-  const nt=prompt('标题:',title);if(!nt||!nt.trim())return;
-  const ntp=prompt('类型:',tp)||tp;
-  try{
-    await fetch('/api/references/'+v2ProjectId+'/'+id,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({title:nt.trim(),ref_type:ntp})});
-    renderReferences();
-  }catch(e){addChat('system','更新失败')}
-}
+// 兼容旧调用
+async function addReference(){showReferenceForm()}
+async function editReference(id){showReferenceForm(id)}
 
 // ── Phase 6: Usage Panel ──
+let _usageScope = 'project';   // 'project' | 'global'
+let _usageCache = null;
+let _usageRecords = [];
+
+function _usageHeader(){
+  const scopeLabel=_usageScope==='global'?'全局':'本项目';
+  return '<div class="panel-header"><h2>📊 消耗统计</h2><div class="actions">'+
+    '<button class="btn" id="usage-refresh-btn" onclick="renderUsage()">刷新</button>'+
+    '<div class="export-group" style="display:inline-block;margin-left:4px">'+
+    '<button class="btn" id="usage-scope-btn" onclick="toggleUsageScope()">范围: '+scopeLabel+'</button>'+
+    '</div></div></div>';
+}
+
 async function renderUsage(){
   if(currentPanel!=='usage')return;
-  let h='<div class="panel-header"><h2>📊 消耗统计</h2><div class="actions"><button class="btn" onclick="renderUsage()">刷新</button></div></div>';
+  let h=_usageHeader();
   h+='<div class="panel-body" id="usage-body"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
   document.getElementById('centerPanel').innerHTML=h;
   try{
-    if(!v2ProjectId)return;
-    const r=await fetch('/api/usage/'+v2ProjectId);const d=await r.json();
+    let url=_usageScope==='global'?'/api/usage':'/api/usage/'+v2ProjectId;
+    if(_usageScope==='project'&&!v2ProjectId){
+      const body=document.getElementById('usage-body');
+      if(body)body.innerHTML=_usageEmptyState();
+      return;
+    }
+    const r=await fetch(url);
+    const d=await r.json();
     if(!d.ok)return;
-    const s=d.stats||{};
-    let uh='<div class="panel-header"><h2>📊 消耗统计</h2></div><div class="panel-body">';
+    _usageCache=d.stats||{};
+    _usageRecords=(d.records||[]).slice().reverse();  // newest first
+    renderUsageContent();
+  }catch(e){
+    const body=document.getElementById('usage-body');
+    if(body)body.innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+esc(e.message)+'</p>';
+  }
+}
 
-    // Summary cards
-    const totalTk=s.total_tokens||0;
-    uh+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px">';
-    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">总调用次数</div><div style="font-size:28px;font-weight:700;color:var(--accent);margin:8px 0">'+(s.total_calls||0)+'</div></div>';
-    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">总 Token</div><div style="font-size:28px;font-weight:700;color:var(--accent);margin:8px 0">'+(totalTk>=1000?(totalTk/1000).toFixed(1)+'K':totalTk)+'</div></div>';
-    uh+='<div class="ctx-card fade-in" style="text-align:center"><div style="font-size:11px;color:var(--text-muted)">预估费用</div><div style="font-size:28px;font-weight:700;color:var(--success);margin:8px 0">$'+(s.total_cost_usd||0).toFixed(4)+'</div></div>';
-    uh+='</div>';
+function _usageEmptyState(){
+  return '<div class="usage-empty"><div class="icon">📊</div>'+
+    '<div>暂无消耗数据</div>'+
+    '<div class="hint">消耗统计将在 LLM 调用后自动记录<br>所有 LLM 请求（编排器、子 Agent）都会被追踪</div></div>';
+}
 
+function toggleUsageScope(){
+  _usageScope=_usageScope==='global'?'project':'global';
+  renderUsage();
+}
+
+function _formatTokens(tk){
+  if(!tk&&tk!==0)return '0';
+  if(tk>=10000)return (tk/1000).toFixed(1)+'K';
+  if(tk>=1000)return (tk/1000).toFixed(2)+'K';
+  return String(tk);
+}
+
+function renderUsageContent(){
+  const s=_usageCache||{};
+  const records=_usageRecords||[];
+  let h=_usageHeader();
+  h+='<div class="panel-body">';
+
+  // Summary cards
+  const totalTk=s.total_tokens||0;
+  h+='<div class="usage-summary-grid">';
+  h+='<div class="usage-summary calls"><div class="label">总调用次数</div><div class="value">'+(s.total_calls||0)+'</div><div class="unit">次</div></div>';
+  h+='<div class="usage-summary tokens"><div class="label">总 Token</div><div class="value">'+_formatTokens(totalTk)+'</div><div class="unit">tokens</div></div>';
+  h+='<div class="usage-summary cost"><div class="label">预估费用</div><div class="value">$'+(s.total_cost_usd||0).toFixed(4)+'</div><div class="unit">USD</div></div>';
+  h+='</div>';
+
+  const hasData=Object.keys(s.per_agent||{}).length>0||Object.keys(s.per_model||{}).length>0||records.length>0;
+
+  if(!hasData){
+    h+=_usageEmptyState();
+  }else{
     // Per-agent breakdown
     const pa=s.per_agent||{};
-    if(Object.keys(pa).length>0){
-      uh+='<div class="ctx-card fade-in"><h3>Agent 消耗明细</h3>';
-      uh+='<div style="font-size:11px;color:var(--text-muted);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)"><span>Agent</span><span>调用</span><span>Token</span><span>费用</span></div>';
-      for(const [agent,adata] of Object.entries(pa)){
+    const paEntries=Object.entries(pa).sort(function(a,b){return (b[1].calls||0)-(a[1].calls||0);});
+    if(paEntries.length>0){
+      h+='<div class="ctx-card fade-in">';
+      h+='<div class="usage-section-title" style="margin-top:0">按 Agent 拆分</div>';
+      h+='<table class="usage-table"><thead><tr>';
+      h+='<th>Agent</th><th class="num">调用</th><th class="num">Tokens</th><th class="num">费用</th>';
+      h+='</tr></thead><tbody>';
+      for(const [agent,adata] of paEntries){
         const tk=adata.tokens||0;
-        uh+='<div style="font-size:12px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-primary)">'+esc(agent)+'</span><span>'+adata.calls+'</span><span>'+(tk>=1000?(tk/1000).toFixed(1)+'K':tk)+'</span><span style="color:var(--success)">$'+(adata.cost||0).toFixed(4)+'</span></div>';
+        h+='<tr><td class="name">'+esc(agent)+'</td><td class="num">'+adata.calls+'</td><td class="num">'+_formatTokens(tk)+'</td><td class="num cost">$'+(adata.cost||0).toFixed(4)+'</td></tr>';
       }
-      uh+='</div>';
+      h+='</tbody></table></div>';
     }
 
     // Per-model breakdown
     const pm=s.per_model||{};
-    if(Object.keys(pm).length>0){
-      uh+='<div class="ctx-card fade-in"><h3>模型消耗明细</h3>';
-      uh+='<div style="font-size:11px;color:var(--text-muted);display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:4px 0;border-bottom:1px solid var(--border)"><span>模型</span><span>调用</span><span>Token</span><span>费用</span></div>';
-      for(const [model,mdata] of Object.entries(pm)){
+    const pmEntries=Object.entries(pm).sort(function(a,b){return (b[1].calls||0)-(a[1].calls||0);});
+    if(pmEntries.length>0){
+      h+='<div class="ctx-card fade-in">';
+      h+='<div class="usage-section-title">按模型拆分</div>';
+      h+='<table class="usage-table"><thead><tr>';
+      h+='<th>模型</th><th class="num">调用</th><th class="num">Tokens</th><th class="num">费用</th>';
+      h+='</tr></thead><tbody>';
+      for(const [model,mdata] of pmEntries){
         const tk=mdata.tokens||0;
-        uh+='<div style="font-size:12px;display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:4px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="color:var(--text-primary)">'+esc(model)+'</span><span>'+mdata.calls+'</span><span>'+(tk>=1000?(tk/1000).toFixed(1)+'K':tk)+'</span><span style="color:var(--success)">$'+(mdata.cost||0).toFixed(4)+'</span></div>';
+        h+='<tr><td class="name">'+esc(model)+'</td><td class="num">'+mdata.calls+'</td><td class="num">'+_formatTokens(tk)+'</td><td class="num cost">$'+(mdata.cost||0).toFixed(4)+'</td></tr>';
       }
-      uh+='</div>';
+      h+='</tbody></table></div>';
     }
 
-    if(Object.keys(pa).length===0&&Object.keys(pm).length===0){
-      uh+='<div style="text-align:center;padding:40px 20px;color:var(--text-muted)"><div style="font-size:40px;margin-bottom:16px">📊</div><div>暂无消耗数据</div><div style="font-size:12px;margin-top:8px">消耗统计将在 LLM 调用后自动记录</div></div>';
+    // Recent calls (last 10)
+    if(records.length>0){
+      h+='<div class="ctx-card fade-in">';
+      h+='<div class="usage-section-title">最近调用 (Last 10)</div>';
+      h+='<div class="usage-recent">';
+      const recent=records.slice(0,10);
+      for(const r of recent){
+        const tk=(r.prompt_tokens||0)+(r.completion_tokens||0);
+        h+='<div class="usage-recent-row">';
+        h+='<div class="agent" title="'+esc(r.agent_name||'-')+'">'+esc(r.agent_name||'-')+'</div>';
+        h+='<div class="model" title="'+esc(r.model||'-')+'">'+esc(r.model||'-')+'</div>';
+        h+='<div class="tokens">'+_formatTokens(tk)+'</div>';
+        h+='<div class="ts" title="'+esc(r.timestamp||'')+'">'+timeAgo(r.timestamp||'')+'</div>';
+        h+='</div>';
+      }
+      h+='</div></div>';
     }
-
-    uh+='</div>';
-    document.getElementById('centerPanel').innerHTML=uh;
-  }catch(e){document.getElementById('usage-body').innerHTML='<p style="color:var(--danger);padding:24px">加载失败: '+e.message+'</p>'}
+  }
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
 }
 
 function renderFactLedger(){
@@ -1596,7 +2293,169 @@ async function savePanel(panel,data){
 }
 
 // Export
-async function exportNovel(fmt){if(!sessionId)return;const r=await fetch('/api/export/'+sessionId+'?fmt='+fmt);const d=await r.json();if(d.content)addChat('system','已导出 ('+d.fmt+', '+(d.content.length||0)+' 字符)')}
+async function exportNovel(fmt){
+  if(!sessionId)return;
+  closeExportDropdown();
+  const r=await fetch('/api/export/'+sessionId+'?fmt='+fmt);
+  const d=await r.json();
+  if(d.content)addChat('system','已导出 ('+d.fmt+', '+(d.content.length||0)+' 字符)');
+}
+function toggleExportDropdown(e){
+  if(e){e.stopPropagation();e.preventDefault();}
+  const grp=document.getElementById('exportGroup');
+  const dd=document.getElementById('exportDropdown');
+  if(!grp||!dd)return;
+  const isOpen=grp.classList.toggle('open');
+  dd.classList.toggle('open',isOpen);
+  dd.style.display=isOpen?'block':'none';
+}
+function closeExportDropdown(){
+  const grp=document.getElementById('exportGroup');
+  const dd=document.getElementById('exportDropdown');
+  if(grp)grp.classList.remove('open');
+  if(dd){dd.classList.remove('open');dd.style.display='none';}
+}
+document.addEventListener('click',function(e){
+  const grp=document.getElementById('exportGroup');
+  if(grp&&!grp.contains(e.target))closeExportDropdown();
+});
+
+// ── Phase 5.2.5: Snapshots Panel ──
+function getActiveProjectId(){
+  // V2 模式优先用 v2ProjectId，V1 用 sessionId
+  return v2ProjectId || sessionId;
+}
+async function renderSnapshots(){
+  if(currentPanel!=='snapshots')return;
+  const pid=getActiveProjectId();
+  let h='<div class="panel-header"><h2>📦 快照管理</h2><div class="actions"><button class="btn" onclick="renderSnapshots()">刷新</button></div></div>';
+  h+='<div class="panel-body" id="snap-body">';
+  if(!pid){
+    h+='<div class="snap-empty"><div class="icon">📦</div><div>请先打开一个项目</div></div>';
+    h+='</div>';
+    document.getElementById('centerPanel').innerHTML=h;
+    return;
+  }
+  // 创建行
+  h+='<div class="snap-create-row">';
+  h+='<input id="snapNameInput" placeholder="快照名称（可选，留空用时间戳）" maxlength="60">';
+  h+='<button class="btn primary" id="snapCreateBtn" onclick="createSnapshot()">创建快照</button>';
+  h+='</div>';
+  h+='<div id="snap-list-area"><div class="ctx-skeleton"></div><div class="ctx-skeleton" style="height:60px"></div></div>';
+  h+='</div>';
+  document.getElementById('centerPanel').innerHTML=h;
+  // 加载列表
+  loadSnapshotList();
+}
+async function loadSnapshotList(){
+  const pid=getActiveProjectId();
+  const area=document.getElementById('snap-list-area');
+  if(!area||!pid)return;
+  try{
+    const r=await fetch('/api/snapshots/'+encodeURIComponent(pid));
+    const d=await r.json();
+    if(!d.ok){
+      area.innerHTML='<div class="snap-error">加载失败: '+esc(d.error||'未知错误')+'</div>';
+      return;
+    }
+    const snaps=d.snapshots||[];
+    if(snaps.length===0){
+      area.innerHTML='<div class="snap-empty"><div class="icon">📦</div><div>暂无快照</div><div style="font-size:12px;margin-top:8px">点击上方"创建快照"按钮保存当前项目状态<br>快照可用于回滚到任意历史节点</div></div>';
+      return;
+    }
+    let h='<div class="snap-list">';
+    snaps.forEach(function(s){
+      const isAuto=!s.name||/^auto/i.test(s.name);
+      const badge=isAuto?'自动':'手动';
+      const chapters=s.chapter_count!=null?('第'+s.chapter_count+'章'):'-';
+      const words=s.word_count!=null?fmtCount(s.word_count)+'字':'-';
+      h+='<div class="snap-card">';
+      h+='<div class="snap-info">';
+      h+='<div class="snap-name">'+esc(s.name||('快照-'+s.id.slice(0,8)))+'<span class="snap-badge">'+badge+'</span></div>';
+      h+='<div class="snap-meta">';
+      h+='<span>🕐 '+timeAgo(s.created_at)+'</span>';
+      h+='<span>📅 '+esc((s.created_at||'').slice(0,19).replace('T',' '))+'</span>';
+      h+='<span>📖 '+chapters+'</span>';
+      h+='<span>📝 '+words+'</span>';
+      h+='</div></div>';
+      h+='<div class="snap-actions">';
+      h+='<button class="snap-restore" onclick="restoreSnapshot(\''+esc(s.id)+'\',\''+esc(s.name||'')+'\')">恢复</button>';
+      h+='<button class="snap-delete" onclick="deleteSnapshot(\''+esc(s.id)+'\',\''+esc(s.name||s.id)+'\')">删除</button>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+    area.innerHTML=h;
+  }catch(e){
+    if(area)area.innerHTML='<div class="snap-error">加载错误: '+esc(e.message)+'</div>';
+  }
+}
+async function createSnapshot(){
+  const pid=getActiveProjectId();
+  if(!pid){addChat('system','❌ 请先打开一个项目');return;}
+  const inp=document.getElementById('snapNameInput');
+  const btn=document.getElementById('snapCreateBtn');
+  const name=inp?inp.value.trim():'';
+  if(btn){btn.disabled=true;btn.textContent='创建中...';}
+  try{
+    const r=await fetch('/api/snapshots/'+encodeURIComponent(pid),{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:name})
+    });
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 快照已创建: '+(name||d.snapshot_id||''));
+      if(inp)inp.value='';
+      await loadSnapshotList();
+    }else{
+      addChat('system','❌ 创建失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){
+    addChat('system','❌ 创建错误: '+e.message);
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='创建快照';}
+  }
+}
+async function restoreSnapshot(snapId,name){
+  const pid=getActiveProjectId();
+  if(!pid||!snapId)return;
+  const label=name||snapId.slice(0,8);
+  if(!confirm('确定要从快照「'+label+'」恢复项目？\n当前所有未保存进度将被覆盖。'))return;
+  addChat('system','⏳ 正在恢复快照...');
+  try{
+    const r=await fetch('/api/snapshots/'+encodeURIComponent(pid)+'/'+encodeURIComponent(snapId)+'/restore',{method:'POST'});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 快照已恢复: '+label);
+      // 刷新状态
+      try{await refreshState();}catch(e){}
+      try{if(typeof refreshV2State==='function')await refreshV2State();}catch(e){}
+      await loadSnapshotList();
+    }else{
+      addChat('system','❌ 恢复失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){
+    addChat('system','❌ 恢复错误: '+e.message);
+  }
+}
+async function deleteSnapshot(snapId,name){
+  const pid=getActiveProjectId();
+  if(!pid||!snapId)return;
+  const label=name||snapId.slice(0,8);
+  if(!confirm('确定要删除快照「'+label+'」？\n此操作不可撤销。'))return;
+  try{
+    const r=await fetch('/api/snapshots/'+encodeURIComponent(pid)+'/'+encodeURIComponent(snapId),{method:'DELETE'});
+    const d=await r.json();
+    if(d.ok){
+      addChat('system','✅ 快照已删除: '+label);
+      await loadSnapshotList();
+    }else{
+      addChat('system','❌ 删除失败: '+(d.error||'未知错误'));
+    }
+  }catch(e){
+    addChat('system','❌ 删除错误: '+e.message);
+  }
+}
 
 // Project grid (Xiaohongshu-style)
 function stageLabel(stage){
@@ -1891,8 +2750,8 @@ function connectSSE(projectId){
     hasInterrupt = true;
     addChat('system', '🎉 全书写作完成！' + (d.reason ? ' ' + d.reason : ''));
     setChatStatus('写作完成');
-    var exportBtn = document.getElementById('exportBtn');
-    if (exportBtn) exportBtn.style.display = 'inline-block';
+    var exportGroup = document.getElementById('exportGroup');
+    if (exportGroup) exportGroup.style.display = 'inline-block';
     var chatInput = document.querySelector('.chat-input-area');
     if (chatInput) chatInput.style.display = 'none';
   });

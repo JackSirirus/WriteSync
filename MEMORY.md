@@ -81,10 +81,11 @@
 - **2026-05-12**：扩展 Agent 改用 `complete()` 替代 `complete_structured()`，跳过 instructor 开销
 - **2026-05-12**：`complete_structured()` 外层添加 SSL 断连/连接错误指数退避重试机制
 - **2026-05-12**：修复规划图 `策划确认` 边映射 Bug（`角色Agent` → `扩展Agent`）
-- **2026-07-18**：Phase 5-6 全部完成 — SQLite 双写迁移 + 快照系统 + HTML/JSON 导出 + Writer 加速 (90s 超时/并发分段) + 年表/文风/参考/消耗四模块 + 文档解析导入 (.md/.txt/.docx)，共 4 commits 未 push
+- **2026-07-18**：Phase 5-6 全部完成 — SQLite 双写迁移 + 快照系统 + HTML/JSON 导出 + Writer 加速 (90s 超时/并发分段) + 年表/文风/参考/消耗四模块 + 文档解析导入 (.md/.txt/.docx)
 - **2026-07-18**：Writer 并发写入策略 — 奇偶段分离 (ThreadPoolExecutor 2 workers)，偶数段无 prev_end 依赖可重叠，assemble 时按序拼接
 - **2026-07-18**：文档解析纯规则方案 — 不用 LLM，正则 + 关键词匹配 (第X章/Chapter X/一、)，settings 识别用 世界观/设定/力量体系 等关键词
 - **2026-07-18**：快照系统命名 — `ProjectSnapshot` (项目级完整状态备份) 区别于已有的 `VersionSnapshot` (代码版本追踪)
+- **2026-07-18**：Phase 7 架构固化完成 — Agent Registry (call_agent dispatch) + Context Source Registry (assemble_context budget) + TableRegistry (auto CRUD/cascade) + Architecture Lint (4 rules)，480 tests passing，7-phase dev plan 全部交付
 
 ## 2026-07-01/02 死循环修复与全流程优化
 

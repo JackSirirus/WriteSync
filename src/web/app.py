@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 _project_root = Path(__file__).parent.parent.parent
 load_dotenv(_project_root / ".env")
 
-from fastapi import FastAPI, Request, Form, HTTPException
+from fastapi import FastAPI, Request, Form, File, HTTPException, UploadFile
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -1078,56 +1078,83 @@ def delete_reference(project_id: str, ref_id: str):
 # =============================================================================
 
 @app.post("/api/import/{project_id}")
-async def import_document_file(project_id: str, request: Request):
+async def import_document_file(project_id: str, file: UploadFile = File(...)):
     """Import a document file — supports .md, .txt, .docx via multipart form.
 
     Usage: curl -F "file=@doc.md" http://localhost:8000/api/import/{project_id}
-    Returns parsed sections that can be saved as reference materials.
+    Returns parsed ImportResult (chapters, settings, materials, metadata) as JSON.
     """
     ws = _get_ws(project_id)
     if ws is None:
         return JSONResponse({"ok": False, "error": "项目不存在"}, status_code=404)
 
-    # Parse multipart form manually
-    try:
-        form = await request.form()
-        file = form.get("file")
-    except Exception as e:
-        logger.error("[api] import form parse failed: %s", e)
-        return JSONResponse({"ok": False, "error": f"表单解析失败: {e}"}, status_code=400)
+    if file.filename is None:
+        return JSONResponse({"ok": False, "error": "请上传文件"}, status_code=400)
 
-    if file is None:
-        return JSONResponse({"ok": False, "error": "请上传文件 (file field)"}, status_code=400)
+    original_name: str = file.filename
+    suffix = Path(original_name).suffix.lower()
 
-    # Save temp file
+    # Validate supported format
+    if suffix not in (".md", ".markdown", ".txt", ".docx"):
+        return JSONResponse({
+            "ok": False,
+            "error": f"不支持的文件类型: {suffix}（支持 .md .txt .docx）",
+        }, status_code=400)
+
+    # Read raw bytes for size check
+    raw_bytes = await file.read()
+    if not raw_bytes:
+        return JSONResponse({"ok": False, "error": "文件为空"}, status_code=400)
+
+    file_size = len(raw_bytes)
+    MAX_SIZE = 500 * 1024  # 500KB
+    if file_size > MAX_SIZE:
+        logger.warning(
+            "[api] import large file: '%s' is %.1fKB, processing may be slow",
+            original_name, file_size / 1024,
+        )
+
+    from src.utils.doc_importer import DocumentParser
+
+    parser = DocumentParser()
     import tempfile
-    original_name = getattr(file, "filename", "uploaded")
-    suffix = Path(original_name).suffix or ".txt"
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix)
+
     try:
-        content = await file.read()
-        if isinstance(content, str):
-            content = content.encode("utf-8")
-        tmp.write(content)
-        tmp.close()
+        if suffix == ".docx":
+            # Save to temp file for docx parsing
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".docx")
+            try:
+                tmp.write(raw_bytes)
+                tmp.close()
+                result = parser.parse_file(tmp.name)
+            finally:
+                Path(tmp.name).unlink(missing_ok=True)
+        else:
+            # .md / .txt: decode content as UTF-8
+            content = raw_bytes.decode("utf-8", errors="replace")
+            result = parser.parse(content, original_name)
 
-        from src.utils.doc_importer import import_document
-        result = import_document(tmp.name, project_id)
-        Path(tmp.name).unlink(missing_ok=True)
+        # Check for parsing errors
+        if result.metadata.get("error"):
+            return JSONResponse({
+                "ok": False,
+                "error": result.metadata["error"],
+            }, status_code=400)
 
-        if "error" in result:
-            return JSONResponse({"ok": False, "error": result["error"]}, status_code=400)
-
+        logger.info(
+            "[api] import success: '%s' → %d chapters, %d settings, %d materials",
+            original_name, len(result.chapters), len(result.settings), len(result.materials),
+        )
         return JSONResponse({
             "ok": True,
             "file_name": original_name,
-            "sections": result.get("sections", []),
-            "word_count": result.get("word_count", 0),
-            "metadata": result.get("metadata", {}),
+            "chapters": result.chapters,
+            "settings": result.settings,
+            "materials": result.materials,
+            "metadata": result.metadata,
         })
     except Exception as e:
-        logger.exception("[api] import failed for %s", project_id)
-        Path(tmp.name).unlink(missing_ok=True)
+        logger.exception("[api] import failed for %s: %s", project_id, original_name)
         return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 

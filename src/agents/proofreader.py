@@ -51,11 +51,11 @@ def run_proofreader_agent(
     try:
         response: ProofreadReport = llm.complete_structured(
             prompt, output_class=ProofreadReport, temperature=0.2,
-            max_tokens=16384, timeout=300,
+            max_tokens=16384, timeout=90, max_retries=1,
         )
     except Exception:
         # fallback: complete() 直接获取修正后正文
-        text = llm.complete(prompt, temperature=0.2, max_tokens=16384, timeout=300)
+        text = llm.complete(prompt, temperature=0.2, max_tokens=16384, timeout=90, max_retries=1)
         response = ProofreadReport(
             typos=[], grammar_issues=[], punctuation_issues=[],
             format_issues=[], corrected_version=text,

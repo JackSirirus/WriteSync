@@ -7,9 +7,16 @@ v0.4.1: 分步生成模式（Plan → Write Segments → Assemble）
   将单次大 prompt 拆为 2-3 个小 prompt，每步输出 < 1800 字，
   保证单次 LLM 调用在网关 100s 硬超时内完成。
   失败时自动降级到单次调用模式。
+
+v0.5.0: Speed optimization
+  - All timeouts aligned to 90s (well under gateway 100s limit)
+  - max_retries=1 for transient failure resilience
+  - Concurrent segment writing: odd/even segments can overlap
+    (even segments use only segment description without prev_end)
 """
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 from ..state.state_types import GraphState
@@ -108,17 +115,18 @@ def _run_writer_step_by_step(
     )
     plan: ContentPlan = llm.complete_structured(
         plan_prompt, output_class=ContentPlan,
-        temperature=0.7, max_tokens=2048, timeout=120, max_retries=0,
+        temperature=0.7, max_tokens=2048, timeout=90, max_retries=1,
     )
     logger.info(
         f"Writer plan for ch {chapter_number}: {plan.total_segments} segments, "
         f"climax at [{plan.climax_position}]"
     )
 
-    # ── Step 2: 逐段写作 ──
-    segments: list[str] = []
-    prev_end = ""
-    for i, seg in enumerate(plan.segments, start=1):
+    # ── Step 2: 并发段落写作（v0.5.0 speed optimization） ──
+    # 奇数段和偶数段可以并发写：偶数段不使用 prev_end，仅靠 segment description 保持连贯。
+    # 收到结果后再按顺序排列，assemble 步骤负责最终衔接。
+    def _write_segment(i: int, seg, prev_segment_end: str = "") -> tuple[int, str]:
+        """写单个段落（线程安全，供并发调用）。"""
         seg_desc = f"分段 {seg.segment_id}：{seg.summary}"
         if seg.key_beats:
             seg_desc += f"\n关键节拍：{' → '.join(seg.key_beats)}"
@@ -132,17 +140,54 @@ def _run_writer_step_by_step(
         seg_prompt = build_step_segment_prompt(
             seg_desc, i, plan.total_segments,
             chapter_text, story_ctx, char_ctx, world_ctx,
-            prev_segment_end=prev_end,
+            prev_segment_end=prev_segment_end,
             extra_context=f"\n\n---\n\n{seg_extra}",
             system_prompt=prompt_override,
         )
         text = llm.complete(
             seg_prompt, temperature=0.8, max_tokens=4096,
-            timeout=180, max_retries=0,
+            timeout=90, max_retries=1,
         )
-        segments.append(text)
-        prev_end = text
-        logger.info(f"Writer segment {i}/{plan.total_segments} for ch {chapter_number}: {len(text)} chars")
+        return i, text
+
+    segments: list[str] = [""] * len(plan.segments)
+    prev_end = ""
+
+    if len(plan.segments) <= 2:
+        # 少于3段直接顺序写，无需并发开销
+        for i, seg in enumerate(plan.segments, start=1):
+            _, text = _write_segment(i, seg, prev_end)
+            segments[i - 1] = text
+            prev_end = text
+            logger.info(f"Writer segment {i}/{plan.total_segments} for ch {chapter_number}: {len(text)} chars")
+    else:
+        # 3+段：第1段顺序写（建立基调），后续段2-3并发，每轮收完再发下一轮
+        # Round 1: 第1段顺序
+        first_i, first_text = _write_segment(1, plan.segments[0], "")
+        segments[0] = first_text
+        prev_end = first_text
+        logger.info(f"Writer segment 1/{plan.total_segments} for ch {chapter_number}: {len(first_text)} chars")
+
+        # Round 2+: 每轮并发写 2 段（用 prev_end 作参考）
+        remaining = list(enumerate(plan.segments[1:], start=2))
+        CHUNK = 2
+        for chunk_start in range(0, len(remaining), CHUNK):
+            chunk = remaining[chunk_start:chunk_start + CHUNK]
+            with ThreadPoolExecutor(max_workers=min(CHUNK, len(chunk))) as pool:
+                futures = {
+                    pool.submit(_write_segment, idx, seg, prev_end): idx
+                    for idx, seg in chunk
+                }
+                for future in as_completed(futures):
+                    idx, text = future.result()
+                    segments[idx - 1] = text
+                    logger.info(f"Writer segment {idx}/{plan.total_segments} for ch {chapter_number}: {len(text)} chars")
+            # 用最后完成的段落文本作为下一轮 prev_end
+            # 按原始顺序取最后一个非空段
+            for idx, _ in reversed(chunk):
+                if segments[idx - 1]:
+                    prev_end = segments[idx - 1]
+                    break
 
     # ── Step 3: 合并组装 ──
     assemble_prompt = build_step_assemble_prompt(
@@ -151,7 +196,7 @@ def _run_writer_step_by_step(
     )
     final_text = llm.complete(
         assemble_prompt, temperature=0.5, max_tokens=8192,
-        timeout=180, max_retries=0,
+        timeout=90, max_retries=1,
     )
     logger.info(f"Writer assembled ch {chapter_number}: {len(final_text)} chars")
 
@@ -219,10 +264,10 @@ def _run_writer_single_call(
     try:
         response: ChapterDraftContent = llm.complete_structured(
             prompt, output_class=ChapterDraftContent, temperature=0.8,
-            max_tokens=16384, timeout=600, max_retries=0,
+            max_tokens=16384, timeout=90, max_retries=1,
         )
     except Exception:
-        text = llm.complete(prompt, temperature=0.8, max_tokens=16384, timeout=600, max_retries=0)
+        text = llm.complete(prompt, temperature=0.8, max_tokens=16384, timeout=90, max_retries=1)
         wc = len(text.replace(" ", ""))
         response = ChapterDraftContent(content=text, word_count=wc)
 

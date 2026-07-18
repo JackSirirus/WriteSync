@@ -12,6 +12,7 @@ Part of the JSON→SQLite migration: dual-write transition (Migration Step 1).
 
 import json
 import logging
+import re
 import sqlite3
 import uuid
 from datetime import datetime, timezone
@@ -179,6 +180,207 @@ PROJECT_TABLES: dict[str, dict[str, Any]] = {
         "cascade_delete": [],
     },
 }
+
+
+# ── Table Registry ───────────────────────────────────────────────────────
+
+class TableRegistry:
+    """Unified data registry wrapping PROJECT_TABLES.
+
+    Provides auto-generated CRUD, import/export, and cascade-delete
+    for every registered table.  The primary-key column is the first
+    column listed in the CREATE TABLE statement.
+
+    Usage::
+
+        registry = get_table_registry()
+        registry.create_all(conn)
+        registry.insert_row(conn, "projects", {"id": "abc", "name": "Test"})
+        rows = registry.export_table(conn, "projects")
+    """
+
+    def __init__(self, tables: dict[str, dict[str, Any]]):
+        self._tables: dict[str, dict[str, Any]] = {}
+        for name, defn in tables.items():
+            self._tables[name] = dict(defn)
+
+    # -- helpers ----------------------------------------------------------
+
+    def _pk_column(self, table: str) -> str:
+        """Return the name of the primary-key column (first column in SQL)."""
+        sql = self._tables[table]["sql"]
+        m = re.search(r"\(\s*(\w+)", sql)
+        if not m:
+            raise ValueError(f"Cannot determine primary key for table '{table}'")
+        return m.group(1)
+
+    def _columns(self, table: str) -> list[str]:
+        """Return all column names parsed from the CREATE TABLE statement."""
+        sql = self._tables[table]["sql"]
+        m = re.search(r"\((.+)\)", sql, re.DOTALL)
+        if not m:
+            return []
+        body = m.group(1)
+        cols: list[str] = []
+        for line in body.split(","):
+            line = line.strip()
+            if not line:
+                continue
+            upper = line.upper()
+            # Skip standalone constraint / directive lines
+            if (upper.startswith("FOREIGN KEY") or
+                upper.startswith("CONSTRAINT") or
+                upper.startswith("PRIMARY KEY") or
+                upper.startswith("UNIQUE") or
+                upper.startswith("CHECK")):
+                continue
+            parts = line.split()
+            if parts:
+                col = parts[0].strip('"`[]')
+                cols.append(col)
+        return cols
+
+    def _fk_column_for_parent(self, parent_table: str) -> str:
+        """Derive the FK column name that child tables use to reference
+        *parent_table*."""
+        singular = parent_table[:-1] if parent_table.endswith("s") else parent_table
+        return f"{singular}_id"
+
+    # -- schema management ------------------------------------------------
+
+    def create_all(self, conn: sqlite3.Connection) -> None:
+        """Execute ``CREATE TABLE IF NOT EXISTS`` for every registered table."""
+        for table_def in self._tables.values():
+            conn.execute(table_def["sql"])
+        logger.debug("TableRegistry: created %d tables", len(self._tables))
+
+    def drop_all(self, conn: sqlite3.Connection) -> None:
+        """Drop every registered table in reverse-registration order (coarse
+        dependency ordering)."""
+        for table_name in reversed(list(self._tables.keys())):
+            conn.execute(f"DROP TABLE IF EXISTS {table_name}")
+        logger.debug("TableRegistry: dropped %d tables", len(self._tables))
+
+    # -- CRUD -------------------------------------------------------------
+
+    def insert_row(self, conn: sqlite3.Connection, table: str,
+                   row_dict: dict[str, Any]) -> None:
+        """Insert or replace a row using *row_dict* keys as column names."""
+        columns = list(row_dict.keys())
+        placeholders = ", ".join(["?"] * len(columns))
+        col_names = ", ".join(columns)
+        sql = (f"INSERT OR REPLACE INTO {table} "
+               f"({col_names}) VALUES ({placeholders})")
+        conn.execute(sql, tuple(row_dict.values()))
+
+    def _rows_to_dicts(self, cursor) -> list[dict[str, Any]]:
+        """Convert cursor rows to list of dicts, handling both Row and tuple."""
+        columns = [desc[0] for desc in cursor.description] if cursor.description else []
+        return [dict(zip(columns, row)) for row in cursor.fetchall()]
+
+    def get_rows(self, conn: sqlite3.Connection, table: str,
+                 where: Optional[str] = None,
+                 params: Optional[tuple] = None) -> list[dict[str, Any]]:
+        """Return all rows, optionally filtered by a ``WHERE`` clause."""
+        if where:
+            sql = f"SELECT * FROM {table} WHERE {where}"
+            cursor = conn.execute(sql, params or ())
+        else:
+            sql = f"SELECT * FROM {table}"
+            cursor = conn.execute(sql)
+        return self._rows_to_dicts(cursor)
+
+    def update_row(self, conn: sqlite3.Connection, table: str,
+                   pk_value: Any, updates: dict[str, Any]) -> None:
+        """Update a row by primary-key value.  *updates* dict keys that
+        match the PK column are silently ignored."""
+        pk_col = self._pk_column(table)
+        set_clauses: list[str] = []
+        values: list[Any] = []
+        for col, val in updates.items():
+            if col == pk_col:
+                continue
+            set_clauses.append(f"{col} = ?")
+            values.append(val)
+        if not set_clauses:
+            return
+        values.append(pk_value)
+        sql = (f"UPDATE {table} SET {', '.join(set_clauses)} "
+               f"WHERE {pk_col} = ?")
+        conn.execute(sql, values)
+
+    def delete_row(self, conn: sqlite3.Connection, table: str,
+                   pk_value: Any) -> None:
+        """Delete a single row by primary-key value."""
+        pk_col = self._pk_column(table)
+        conn.execute(f"DELETE FROM {table} WHERE {pk_col} = ?", (pk_value,))
+
+    # -- import / export --------------------------------------------------
+
+    def export_table(self, conn: sqlite3.Connection,
+                     table: str) -> list[dict[str, Any]]:
+        """Export every row in *table* as a list of dicts."""
+        cursor = conn.execute(f"SELECT * FROM {table}")
+        return self._rows_to_dicts(cursor)
+
+    def import_table(self, conn: sqlite3.Connection, table: str,
+                     rows: list[dict[str, Any]]) -> None:
+        """Bulk-insert rows from a list of dicts (``INSERT OR REPLACE``)."""
+        if not rows:
+            return
+        columns = list(rows[0].keys())
+        placeholders = ", ".join(["?"] * len(columns))
+        col_names = ", ".join(columns)
+        sql = (f"INSERT OR REPLACE INTO {table} "
+               f"({col_names}) VALUES ({placeholders})")
+        values = [tuple(row[col] for col in columns) for row in rows]
+        conn.executemany(sql, values)
+        logger.debug("TableRegistry: imported %d rows into '%s'",
+                      len(rows), table)
+
+    # -- cascade delete ---------------------------------------------------
+
+    def cascade_delete(self, conn: sqlite3.Connection, table: str,
+                       pk_value: Any) -> None:
+        """Delete a row and every row in child tables that reference it.
+
+        Recurses into children that themselves declare ``cascade_delete``
+        entries so deep cascades are handled automatically.
+        """
+        pk_col = self._pk_column(table)
+        children: list[str] = self._tables[table].get("cascade_delete") or []
+
+        # Depth-first: delete children before parent (FK safety)
+        for child_table in children:
+            fk_col = self._fk_column_for_parent(table)
+            child_pk = self._pk_column(child_table)
+            cursor = conn.execute(
+                f"SELECT {child_pk} FROM {child_table} WHERE {fk_col} = ?",
+                (pk_value,),
+            )
+            pk_index = 0  # SELECT only returns one column
+            for row in cursor.fetchall():
+                self.cascade_delete(conn, child_table, row[pk_index])
+
+        conn.execute(f"DELETE FROM {table} WHERE {pk_col} = ?", (pk_value,))
+        logger.debug("TableRegistry: cascade-deleted '%s' pk=%s", table, pk_value)
+
+    # -- registration -----------------------------------------------------
+
+    def register_table(self, name: str, sql: str,
+                       exportable: bool = True,
+                       cascade_delete: Optional[list[str]] = None) -> None:
+        """Add (or overwrite) a table definition at runtime."""
+        self._tables[name] = {
+            "sql": sql,
+            "exportable": exportable,
+            "cascade_delete": cascade_delete or [],
+        }
+        logger.info("TableRegistry: registered table '%s'", name)
+
+    def table_names(self) -> list[str]:
+        """Return all registered table names in insertion order."""
+        return list(self._tables.keys())
 
 
 class SQLitePersistence:
@@ -512,3 +714,20 @@ class SQLitePersistence:
         cursor = conn.execute("DELETE FROM snapshots WHERE id = ?", (snapshot_id,))
         conn.commit()
         return cursor.rowcount > 0
+
+
+# ── module-level singleton ──────────────────────────────────────────────
+
+_table_registry: Optional[TableRegistry] = None
+
+
+def get_table_registry() -> TableRegistry:
+    """Return the module-level :class:`TableRegistry` singleton.
+
+    On first call the registry is populated from the global
+    ``PROJECT_TABLES`` dict defined above.
+    """
+    global _table_registry
+    if _table_registry is None:
+        _table_registry = TableRegistry(PROJECT_TABLES)
+    return _table_registry

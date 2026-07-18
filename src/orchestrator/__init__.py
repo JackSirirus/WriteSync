@@ -10,7 +10,6 @@ from .models import (
     AgentName,
 )
 from .workspace import Workspace, init_workspace, load_workspace
-from .adapters import call_agent
 from .decision import decide_next_action
 from .loop import OrchestratorSession
 from .agent_registry import (
@@ -19,6 +18,9 @@ from .agent_registry import (
     add_agent,
     get_agent,
     list_agents,
+    agents_for_phase,
+    register_agent,
+    call_agent,
 )
 
 __all__ = [
@@ -35,10 +37,12 @@ __all__ = [
     "call_agent",
     "decide_next_action",
     "OrchestratorSession",
-    # Phase 7: agent registry
+    # Agent registry (source of truth for agent dispatch)
     "AGENT_REGISTRY",
     "AgentDef",
     "add_agent",
     "get_agent",
     "list_agents",
+    "agents_for_phase",
+    "register_agent",
 ]

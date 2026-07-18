@@ -1,287 +1,318 @@
 #!/usr/bin/env python3
 """
-WriteSync Architecture Lint (Phase 7)
+WriteSync Architecture Linter
 
-Standalone script that validates architecture constraints.
-Run from the project root:  python scripts/arch_lint.py
-Exit code 0 = all checks passed. Non-zero = violations found.
+Scans ``src/`` for four categories of architecture violations and reports them
+in ``file:line:rule`` form.
 
-Checks:
-  1. No hardcoded system prompts outside src/agents/prompts/
-  2. No direct file I/O outside src/state/persistence*.py
-  3. All logger names use lowercase "writesync"
-  4. All agent modules from adapters.AGENT_MAP are in AGENT_REGISTRY
-  5. WriteSyncState uses @dataclass decorator
+Rules
+-----
+1. ``NO_SCATTERED_PROMPT``     - inline prompt strings in non-prompt files
+2. ``NO_DIRECT_FILE_IO``       - raw file operations outside the persistence layer
+3. ``NO_MANUAL_FIELD_MAPPING`` - manual TypedDict field copying in functions
+4. ``LOGGER_NAME``             - logger name must be exactly ``"writesync"``
+
+Usage
+-----
+::
+
+    python scripts/arch_lint.py
+    python -m scripts.arch_lint
+    from scripts.arch_lint import run_lint, LintViolation
+
+Exit codes
+----------
+``0`` - no violations
+``1`` - one or more violations found
 """
+
+from __future__ import annotations
 
 import ast
 import re
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 
 
+# Project root (parent of the scripts/ package).
 ROOT = Path(__file__).resolve().parent.parent
-SRC = ROOT / "src"
+
+# Match a CJK Unified Ideograph (basic block + extension A).
+_CJK_CHAR = re.compile(r"[\u4e00-\u9fff\u3400-\u4dbf]")
+
+# Match getLogger("...") / getLogger('...') with a non-empty string argument.
+_GETLOGGER_RE = re.compile(r'getLogger\s*\(\s*["\']([^"\']+)["\']\s*\)')
 
 
-# ── utilities ──────────────────────────────────────────────────────────────
-def _walk_py_files(path: Path):
-    """Yield all .py file paths under a directory."""
-    return sorted(path.rglob("*.py"))
+# ── public types ──────────────────────────────────────────────────────────
+
+@dataclass
+class LintViolation:
+    """A single architecture violation found in a source file."""
+    file: str
+    line: int
+    rule: str
+    message: str
 
 
-def _read_lines(filepath: Path):
-    try:
-        return filepath.read_text(encoding="utf-8").splitlines()
-    except UnicodeDecodeError:
+# ── generic helpers ───────────────────────────────────────────────────────
+
+def _walk_py_files(src_path: Path) -> list[Path]:
+    """Return all ``*.py`` files under ``src_path`` in sorted order."""
+    if not src_path.exists() or not src_path.is_dir():
         return []
+    return sorted(p for p in src_path.rglob("*.py") if p.is_file())
 
 
-def _resolve_relative_import(import_path: str, base_dir: Path) -> Path:
-    """Resolve a relative Python import like '..agents.character' to a file path."""
-    parts = import_path.lstrip(".").split(".")
-    # count dots for parent dirs
-    dots = len(import_path) - len(import_path.lstrip("."))
-    current = base_dir
-    for _ in range(dots - 1):
-        current = current.parent
-    return current / Path(*parts).with_suffix(".py")
+def _read_text(p: Path) -> str:
+    """Best-effort UTF-8 read; empty string on failure."""
+    try:
+        return p.read_text(encoding="utf-8")
+    except (UnicodeDecodeError, OSError):
+        return ""
 
 
-# ── check implementations ──────────────────────────────────────────────────
+def _relpath(p: Path) -> str:
+    """POSIX-style path relative to the project root."""
+    try:
+        return str(p.relative_to(ROOT)).replace("\\", "/")
+    except ValueError:
+        return str(p).replace("\\", "/")
 
-def check_hardcoded_prompts() -> tuple[bool, list[str]]:
-    """Check 1: no hardcoded system prompt strings outside src/agents/prompts/."""
-    violations = []
-    prompts_dir = SRC / "agents" / "prompts"
-    zh_pattern = re.compile(r"你是一个")
-    en_pattern = re.compile(r"You are an?\b")
-    excluded = {"arch_lint.py"}  # this file itself
 
-    for py_file in _walk_py_files(SRC):
-        if py_file.name in excluded:
+def _parse_tree(p: Path, text: str) -> ast.Module | None:
+    """Parse source text; return ``None`` on syntax error."""
+    try:
+        return ast.parse(text, filename=str(p))
+    except SyntaxError:
+        return None
+
+
+# ── Rule 1: NO_SCATTERED_PROMPT ───────────────────────────────────────────
+
+def _check_scattered_prompts(src_path: Path) -> list[LintViolation]:
+    """Flag any string literal >100 chars with Chinese + (ends with '?' or contains '请')."""
+    violations: list[LintViolation] = []
+    prompts_dir = src_path / "agents" / "prompts"
+    excluded_files = {src_path / "agents" / "response_models.py"}
+
+    for py_file in _walk_py_files(src_path):
+        if py_file in excluded_files:
             continue
-        # Skip files inside prompts/
         if prompts_dir in py_file.parents:
             continue
-        lines = _read_lines(py_file)
-        for i, line in enumerate(lines, 1):
-            stripped = line.strip()
-            # skip comments and docstrings (simple heuristic)
-            if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+        rel = _relpath(py_file)
+        text = _read_text(py_file)
+        if not text:
+            continue
+        tree = _parse_tree(py_file, text)
+        if tree is None:
+            continue
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Constant) or not isinstance(node.value, str):
                 continue
-            if zh_pattern.search(stripped) or en_pattern.search(stripped):
-                # Only flag if it looks like a prompt (not a test or comment)
-                violations.append(f"{py_file.relative_to(ROOT)}:{i}: {stripped[:80]}")
-                break  # one violation per file is enough
-    return (len(violations) == 0, violations)
+            s = node.value
+            if len(s) <= 100:
+                continue
+            if not _CJK_CHAR.search(s):
+                continue
+            stripped = s.rstrip()
+            ends_q = stripped.endswith("?") or stripped.endswith("？")
+            has_qing = "请" in s
+            if not (ends_q or has_qing):
+                continue
+            violations.append(LintViolation(
+                file=rel,
+                line=node.lineno,
+                rule="NO_SCATTERED_PROMPT",
+                message=(
+                    f"Inline prompt-like string ({len(s)} chars) with Chinese + "
+                    f"{'?' if ends_q else '请'} — move to src/agents/prompts/"
+                ),
+            ))
+    return violations
 
 
-def check_file_io() -> tuple[bool, list[str]]:
-    """Check 2: no direct file I/O outside src/state/persistence*.py."""
-    violations = []
-    open_pattern = re.compile(r"\bopen\s*\(")
-    path_write = re.compile(r"Path\s*\(.*\)\s*\.\s*write")
-    excluded = {"arch_lint.py"}
-    # Operational files that legitimately do file I/O
-    allowed_io = {
-        "src/utils/export.py",
-        "src/utils/export_json.py",
-        "src/utils/export_html.py",
-        "src/utils/usage_tracker.py",
-        "src/utils/doc_importer.py",
-        "src/web/app.py",
-        "src/orchestrator/workspace.py",
-        # Data-file loaders (read project-local JSON files)
-        "src/agents/fact_ledger.py",
-        "src/agents/foreshadow.py",
-        "src/agents/item_ledger.py",
-        "src/agents/references.py",
-        "src/agents/state_table.py",
-        "src/agents/timeline.py",
-        "src/agents/writing_rules.py",
-        # Migration utility
-        "src/state/migrate_to_sqlite.py",
+# ── Rule 2: NO_DIRECT_FILE_IO ─────────────────────────────────────────────
+
+def _classify_io_call(node: ast.Call) -> str | None:
+    """Return a short tag describing the I/O call, or ``None`` if not file I/O."""
+    func = node.func
+    if isinstance(func, ast.Name):
+        return "open()" if func.id == "open" else None
+    if isinstance(func, ast.Attribute):
+        attr = func.attr
+        if attr in ("read_text", "write_text", "read_bytes", "write_bytes"):
+            return f".{attr}()"
+        if attr in ("load", "dump") and isinstance(func.value, ast.Name) and func.value.id == "json":
+            return f"json.{attr}()"
+    return None
+
+
+def _check_direct_file_io(src_path: Path) -> list[LintViolation]:
+    """Flag raw file I/O calls outside the persistence layer."""
+    violations: list[LintViolation] = []
+    excluded_files = {
+        src_path / "state" / "persistence.py",
+        src_path / "state" / "persistence_sqlite.py",
+        src_path / "agents" / "context.py",
     }
 
-    for py_file in _walk_py_files(SRC):
-        if py_file.name in excluded:
+    for py_file in _walk_py_files(src_path):
+        if py_file in excluded_files:
             continue
-        rel = str(py_file.relative_to(ROOT)).replace("\\", "/")
-        # Allow persistence files
-        if "src/state/persistence" in rel:
+        rel = _relpath(py_file)
+        text = _read_text(py_file)
+        if not text:
             continue
-        # Allow known operational I/O
-        if rel in allowed_io:
+        tree = _parse_tree(py_file, text)
+        if tree is None:
             continue
-        lines = _read_lines(py_file)
-        for i, line in enumerate(lines, 1):
-            stripped = line.strip()
-            if stripped.startswith("#"):
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
                 continue
-            if open_pattern.search(stripped) or path_write.search(stripped):
-                violations.append(f"{rel}:{i}: {stripped[:80]}")
-                break
-    return (len(violations) == 0, violations)
+            tag = _classify_io_call(node)
+            if tag is None:
+                continue
+            violations.append(LintViolation(
+                file=rel,
+                line=node.lineno,
+                rule="NO_DIRECT_FILE_IO",
+                message=f"Direct file I/O call {tag} — go through persistence layer",
+            ))
+    return violations
 
 
-def check_logger_names() -> tuple[bool, list[str]]:
-    """Check 3: all logger names use lowercase 'writesync'."""
-    violations = []
-    # Match getLogger calls: getLogger("WriteSync...") or getLogger('WriteSync...')
-    logger_pattern = re.compile(r'getLogger\s*\(\s*["\']([wW]rite[Ss]ync[^"\')\s]*)')
-    excluded = {"arch_lint.py"}
+# ── Rule 3: NO_MANUAL_FIELD_MAPPING ───────────────────────────────────────
 
-    for py_file in _walk_py_files(SRC):
-        if py_file.name in excluded:
+def _subscript_str_key(node: ast.Subscript) -> str | None:
+    """Extract the string key from a Subscript like ``state['key']``."""
+    slice_node = node.slice
+    if isinstance(slice_node, ast.Constant) and isinstance(slice_node.value, str):
+        return slice_node.value
+    return None
+
+
+def _iter_function_statements(func_node: ast.AST) -> list[ast.AST]:
+    """Walk a function body but skip nested function/class definitions."""
+    nodes: list[ast.AST] = []
+    for stmt in getattr(func_node, "body", []):
+        if isinstance(stmt, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             continue
-        lines = _read_lines(py_file)
-        for i, line in enumerate(lines, 1):
-            m = logger_pattern.search(line)
-            if m:
+        nodes.extend(ast.walk(stmt))
+    return nodes
+
+
+def _check_manual_field_mapping(src_path: Path) -> list[LintViolation]:
+    """Flag functions with 3+ ``target['k'] = src.k`` assignments."""
+    violations: list[LintViolation] = []
+
+    for py_file in _walk_py_files(src_path):
+        rel = _relpath(py_file)
+        # Rule 3 explicitly excludes tests/. (We already walk only src/,
+        # but the path filter is kept defensive.)
+        if rel.startswith("tests/") or rel.startswith("tests\\"):
+            continue
+        text = _read_text(py_file)
+        if not text:
+            continue
+        tree = _parse_tree(py_file, text)
+        if tree is None:
+            continue
+        for func_node in ast.walk(tree):
+            if not isinstance(func_node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                continue
+            mapping_count = 0
+            for stmt in _iter_function_statements(func_node):
+                if not isinstance(stmt, ast.Assign) or len(stmt.targets) != 1:
+                    continue
+                target = stmt.targets[0]
+                value = stmt.value
+                if not isinstance(target, ast.Subscript):
+                    continue
+                key = _subscript_str_key(target)
+                if key is None:
+                    continue
+                if not isinstance(value, ast.Attribute):
+                    continue
+                if key == value.attr:
+                    mapping_count += 1
+            if mapping_count >= 3:
+                violations.append(LintViolation(
+                    file=rel,
+                    line=func_node.lineno,
+                    rule="NO_MANUAL_FIELD_MAPPING",
+                    message=(
+                        f"Function '{func_node.name}' has {mapping_count} manual field "
+                        f"mappings — use a registry/factory"
+                    ),
+                ))
+    return violations
+
+
+# ── Rule 4: LOGGER_NAME ───────────────────────────────────────────────────
+
+def _check_logger_name(src_path: Path) -> list[LintViolation]:
+    """Flag any ``getLogger(name)`` that is not exactly ``"writesync"``."""
+    violations: list[LintViolation] = []
+
+    for py_file in _walk_py_files(src_path):
+        rel = _relpath(py_file)
+        text = _read_text(py_file)
+        if not text:
+            continue
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            for m in _GETLOGGER_RE.finditer(line):
                 name = m.group(1)
-                if name != "writesync":
-                    rel = str(py_file.relative_to(ROOT)).replace("\\", "/")
-                    violations.append(f"{rel}:{i}: getLogger('{name}') should be getLogger('writesync')")
-    return (len(violations) == 0, violations)
+                if name == "writesync":
+                    continue
+                violations.append(LintViolation(
+                    file=rel,
+                    line=lineno,
+                    rule="LOGGER_NAME",
+                    message=f"getLogger('{name}') should be getLogger('writesync')",
+                ))
+    return violations
 
 
-def check_agent_registry() -> tuple[bool, list[str]]:
-    """Check 4: agents in adapters.AGENT_MAP must also be in AGENT_REGISTRY."""
-    violations = []
+# ── public API ────────────────────────────────────────────────────────────
 
-    # Parse adapters.py to find AGENT_MAP keys
-    adapters_path = SRC / "orchestrator" / "adapters.py"
-    if not adapters_path.exists():
-        return (False, [f"Missing: {adapters_path.relative_to(ROOT)}"])
+def run_lint(src_dir: str = "src") -> list[LintViolation]:
+    """Run all four lint rules over ``src_dir`` and return sorted violations.
 
-    adapters_text = adapters_path.read_text(encoding="utf-8")
-    tree = ast.parse(adapters_text)
-    agent_map_keys = []
-    for node in ast.walk(tree):
-        # Handle both Assign (x = ...) and AnnAssign (x: Type = ...)
-        target_name = None
-        node_value = None
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    target_name = target.id
-                    node_value = node.value
-                    break
-        elif isinstance(node, ast.AnnAssign) and node.value:
-            if isinstance(node.target, ast.Name):
-                target_name = node.target.id
-                node_value = node.value
-        if target_name == "AGENT_MAP" and node_value and isinstance(node_value, ast.Dict):
-            for key_node in node_value.keys:
-                if isinstance(key_node, ast.Constant):
-                    agent_map_keys.append(key_node.value)
-
-    # Parse agent_registry.py to find AGENT_REGISTRY keys
-    registry_path = SRC / "orchestrator" / "agent_registry.py"
-    if not registry_path.exists():
-        return (False, [f"Missing: {registry_path.relative_to(ROOT)}"])
-
-    registry_text = registry_path.read_text(encoding="utf-8")
-    reg_tree = ast.parse(registry_text)
-    registry_keys = []
-    for node in ast.walk(reg_tree):
-        target_name = None
-        node_value = None
-        if isinstance(node, ast.Assign):
-            for target in node.targets:
-                if isinstance(target, ast.Name):
-                    target_name = target.id
-                    node_value = node.value
-                    break
-        elif isinstance(node, ast.AnnAssign) and node.value:
-            if isinstance(node.target, ast.Name):
-                target_name = node.target.id
-                node_value = node.value
-        if target_name == "AGENT_REGISTRY" and node_value and isinstance(node_value, ast.Dict):
-            for key_node in node_value.keys:
-                if isinstance(key_node, ast.Constant):
-                    registry_keys.append(key_node.value)
-
-    # Cross-check
-    for key in agent_map_keys:
-        if key not in registry_keys:
-            violations.append(f'Agent "{key}" missing from AGENT_REGISTRY')
-    for key in registry_keys:
-        if key not in agent_map_keys:
-            violations.append(f'Agent "{key}" in AGENT_REGISTRY but not in AGENT_MAP')
-
-    return (len(violations) == 0, violations)
+    The result is sorted by ``(file, line)`` for stable output.
+    """
+    src_path = Path(src_dir)
+    if not src_path.is_absolute():
+        src_path = ROOT / src_path
+    violations: list[LintViolation] = []
+    violations.extend(_check_scattered_prompts(src_path))
+    violations.extend(_check_direct_file_io(src_path))
+    violations.extend(_check_manual_field_mapping(src_path))
+    violations.extend(_check_logger_name(src_path))
+    violations.sort(key=lambda v: (v.file, v.line, v.rule))
+    return violations
 
 
-def check_state_dataclass() -> tuple[bool, list[str]]:
-    """Check 5: WriteSyncState uses @dataclass decorator."""
-    violations = []
-    state_path = SRC / "state" / "state_types.py"
-    if not state_path.exists():
-        return (False, [f"Missing: {state_path.relative_to(ROOT)}"])
+# ── CLI entry point ───────────────────────────────────────────────────────
 
-    text = state_path.read_text(encoding="utf-8")
-    tree = ast.parse(text)
-
-    found_write_sync = False
-    has_dataclass = False
-    # Track class definitions and their decorators
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ClassDef) and node.name == "WriteSyncState":
-            found_write_sync = True
-            for dec in node.decorator_list:
-                if isinstance(dec, ast.Name) and dec.id == "dataclass":
-                    has_dataclass = True
-                elif isinstance(dec, ast.Call):
-                    if isinstance(dec.func, ast.Name) and dec.func.id == "dataclass":
-                        has_dataclass = True
-                    elif isinstance(dec.func, ast.Attribute) and dec.func.attr == "dataclass":
-                        has_dataclass = True
-
-    if not found_write_sync:
-        violations.append("WriteSyncState class not found in state_types.py")
-    elif not has_dataclass:
-        violations.append("WriteSyncState is missing @dataclass decorator")
-
-    return (len(violations) == 0, violations)
-
-
-# ── main ───────────────────────────────────────────────────────────────────
-
-CHECKS = [
-    ("Prompt isolation", check_hardcoded_prompts),
-    ("File I/O isolation", check_file_io),
-    ("Logger naming", check_logger_names),
-    ("Agent registry sync", check_agent_registry),
-    ("State @dataclass", check_state_dataclass),
-]
-
-
-def main():
-    total = len(CHECKS)
-    passed = 0
-    failures: list[str] = []
-
-    for name, check_fn in CHECKS:
-        ok, msgs = check_fn()
-        if ok:
-            passed += 1
-            print(f"PASS: {name}")
-        else:
-            print(f"FAIL: {name}")
-            for msg in msgs:
-                print(f"  → {msg}")
-                failures.append(f"[{name}] {msg}")
-
-    print()
-    if passed == total:
-        print(f"OK: {passed}/{total} checks passed")
-        sys.exit(0)
-    else:
-        print(f"FAIL: {passed}/{total} checks passed, {total - passed} failed")
-        sys.exit(1)
+def _print_report(violations: list[LintViolation]) -> None:
+    """Print violations grouped by file, with a summary line."""
+    if not violations:
+        print("All checks passed")
+        return
+    by_file: dict[str, list[LintViolation]] = {}
+    for v in violations:
+        by_file.setdefault(v.file, []).append(v)
+    for f, vs in by_file.items():
+        print(f"\n{f}:")
+        for v in vs:
+            print(f"  {v.line}: [{v.rule}] {v.message}")
+    print(f"\n{len(violations)} violations found")
 
 
 if __name__ == "__main__":
-    main()
+    _violations = run_lint("src")
+    _print_report(_violations)
+    sys.exit(1 if _violations else 0)
